@@ -285,8 +285,32 @@ func (w *WalletAssembler) ProvisionChannel(r *Request) (Intent, error) {
 		// If there's no funding amount at all (receiving an inbound
 		// single funder request), then we don't need to perform any
 		// coin selection at all.
-		case r.LocalAmt == 0:
+		case r.LocalAmt == 0 && r.FundUpToMaxAmt == 0 &&
+			r.MinFundAmt == 0:
 			break
+
+		// In case this request uses funding up to some maximum amount,
+		// we will call the specialized method for that.
+		case r.FundUpToMaxAmt != 0 && r.MinFundAmt != 0:
+			dustLimit := w.cfg.DustLimit
+			selectedCoins, localContributionAmt, changeAmt,
+				err = CoinSelectUpToAmount(
+				r.FeeRate, r.FundUpToMaxAmt, dustLimit, coins,
+			)
+			if err != nil {
+				return err
+			}
+
+			// In case the selected amount is lower than MinFundAmt
+			// we must return an error.
+			// The MinFundAmt is determined upstream and denotes
+			// either the minimum viable channel size or an amount
+			// sufficient to cover for the initial remote balance.
+			if localContributionAmt < r.MinFundAmt {
+				return fmt.Errorf("available funds(%v) below "+
+					"the minimum amount(%v)",
+					localContributionAmt, r.MinFundAmt)
+			}
 
 		// In case this request want the fees subtracted from the local
 		// amount, we'll call the specialized method for that. This
@@ -294,7 +318,8 @@ func (w *WalletAssembler) ProvisionChannel(r *Request) (Intent, error) {
 		// from our wallet.
 		case r.SubtractFees:
 			dustLimit := w.cfg.DustLimit
-			selectedCoins, localContributionAmt, changeAmt, err = CoinSelectSubtractFees(
+			selectedCoins, localContributionAmt, changeAmt,
+				err = CoinSelectSubtractFees(
 				r.FeeRate, r.LocalAmt, dustLimit, coins,
 			)
 			if err != nil {
@@ -314,8 +339,8 @@ func (w *WalletAssembler) ProvisionChannel(r *Request) (Intent, error) {
 			}
 		}
 
-		// Sanity check: The addition of the outputs should not lead to the
-		// creation of dust.
+		// Sanity check: The addition of the outputs should not lead to
+		// the creation of dust.
 		if changeAmt != 0 && changeAmt < w.cfg.DustLimit {
 			return fmt.Errorf("change amount(%v) after coin "+
 				"select is below dust limit(%v)", changeAmt,
@@ -330,7 +355,9 @@ func (w *WalletAssembler) ProvisionChannel(r *Request) (Intent, error) {
 			if err != nil {
 				return err
 			}
-			changeScript, err := txscript.PayToAddrScript(changeAddr)
+			changeScript, err := txscript.PayToAddrScript(
+				changeAddr,
+			)
 			if err != nil {
 				return err
 			}

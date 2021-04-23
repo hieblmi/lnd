@@ -59,6 +59,17 @@ type Request struct {
 	// the funding output.
 	RemoteAmt btcutil.Amount
 
+	// FundUpToMaxAmt should be set to a non-zero amount if the channel
+	// funding should try to add as many funds to LocalAmt as possible
+	// until at most that amount is reached.
+	FundUpToMaxAmt btcutil.Amount
+
+	// MinFundAmt should be set iff the FundUpToMaxAmt field is set. It
+	// either carries the configured minimum channel capacity or, if an
+	// initial remote balance is specified, enough to cover the initial
+	// remote balance.
+	MinFundAmt btcutil.Amount
+
 	// MinConfs controls how many confirmations a coin need to be eligible
 	// to be used as an input to the funding transaction. If this value is
 	// set to zero, then zero conf outputs may be spent.

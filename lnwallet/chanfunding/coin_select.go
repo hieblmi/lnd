@@ -1,6 +1,7 @@
 package chanfunding
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/btcsuite/btcd/btcutil"
@@ -52,7 +53,9 @@ type Coin struct {
 // funds, a non-nil error is returned. Additionally, the total amount of the
 // selected coins are returned in order for the caller to properly handle
 // change+fees.
-func selectInputs(amt btcutil.Amount, coins []Coin) (btcutil.Amount, []Coin, error) {
+func selectInputs(amt btcutil.Amount, coins []Coin) (btcutil.Amount,
+	[]Coin, error) {
+
 	satSelected := btcutil.Amount(0)
 	for i, coin := range coins {
 		satSelected += btcutil.Amount(coin.Value)
@@ -250,4 +253,70 @@ func CoinSelectSubtractFees(feeRate chainfee.SatPerKWeight, amt,
 	}
 
 	return selectedUtxos, outputAmt, changeAmt, nil
+}
+
+// CoinSelectUpToAmount attempts to select coins such that we'll select up to
+// maxAmount exclusive of fees if sufficient funds are available. If
+// insufficient funds are available this method selects all available coins.
+func CoinSelectUpToAmount(feeRate chainfee.SatPerKWeight, maxAmount,
+	dustLimit btcutil.Amount, coins []Coin) ([]Coin, btcutil.Amount,
+	btcutil.Amount, error) {
+
+	var (
+		// selectSubtractFee is tracking if our coin selection was
+		// unsuccessful and whether we have to start a new round of
+		// selecting coins considering fees.
+		selectSubtractFee = false
+		outputAmount      = maxAmount
+	)
+
+	// First we try to select coins to create an output of the specified
+	// maxAmount with or without a change output that covers the miner fee.
+	selected, changeAmt, err := CoinSelect(
+		feeRate, maxAmount, dustLimit, coins,
+	)
+
+	var errInsufficientFunds *ErrInsufficientFunds
+	if errors.As(err, &errInsufficientFunds) {
+		// If the initial coin selection fails due to insufficient funds
+		// we select our total available balance minus fees.
+		selectSubtractFee = true
+	} else if err != nil {
+		return nil, 0, 0, err
+	}
+
+	// If we determined that our local balance is insufficient we check our
+	// total balance minus fees.
+	if selectSubtractFee {
+		// Get balance from coins.
+		var totalBalance btcutil.Amount
+		for _, coin := range coins {
+			totalBalance += btcutil.Amount(coin.Value)
+		}
+
+		selected, outputAmount, changeAmt, err = CoinSelectSubtractFees(
+			feeRate, totalBalance, dustLimit, coins,
+		)
+		if err != nil {
+			return nil, 0, 0, err
+		}
+	}
+
+	// Sanity check the resulting output values to make sure we don't burn a
+	// great part to fees.
+	totalOut := outputAmount + changeAmt
+	sum := func(coins []Coin) btcutil.Amount {
+		sum := btcutil.Amount(0)
+		for _, coin := range coins {
+			sum += btcutil.Amount(coin.Value)
+		}
+
+		return sum
+	}
+	err = sanityCheckFee(totalOut, sum(selected)-totalOut)
+	if err != nil {
+		return nil, 0, 0, err
+	}
+
+	return selected, outputAmount, changeAmt, nil
 }
