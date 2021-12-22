@@ -1019,6 +1019,10 @@ type OpenChannelParams struct {
 	// If set to false it avoids applying a fee rate of 0 and instead
 	// activates the default configured fee rate.
 	UseFeeRate bool
+
+	// FundMax is a boolean indicating whether the channel should be funded
+	// with the maximum possible amount from the wallet.
+	FundMax bool
 }
 
 // OpenChannel attempts to open a channel between srcNode and destNode with the
@@ -1063,6 +1067,7 @@ func (n *NetworkHarness) OpenChannel(srcNode, destNode *HarnessNode,
 		FeeRate:            p.FeeRate,
 		UseBaseFee:         p.UseBaseFee,
 		UseFeeRate:         p.UseFeeRate,
+		FundMax:            p.FundMax,
 	}
 
 	// We need to use n.runCtx here to keep the response stream alive after

@@ -842,6 +842,10 @@ type OpenChannelParams struct {
 	// If set to false it avoids applying a fee rate of 0 and instead
 	// activates the default configured fee rate.
 	UseFeeRate bool
+
+	// FundMax is a boolean indicating whether the channel should be funded
+	// with the maximum possible amount from the wallet.
+	FundMax bool
 }
 
 // prepareOpenChannel waits for both nodes to be synced to chain and returns an
@@ -882,6 +886,7 @@ func (h *HarnessTest) prepareOpenChannel(srcNode, destNode *node.HarnessNode,
 		FeeRate:            p.FeeRate,
 		UseBaseFee:         p.UseBaseFee,
 		UseFeeRate:         p.UseFeeRate,
+		FundMax:            p.FundMax,
 	}
 }
 

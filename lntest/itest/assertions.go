@@ -592,13 +592,22 @@ func shutdownAndAssert(net *lntest.NetworkHarness, t *harnessTest,
 	require.NoErrorf(t.t, err, "unable to shutdown %v", node.Name())
 }
 
-// assertChannelBalanceResp makes a ChannelBalance request and checks the
+// assertChannelBalanceResp makes a ChannelBalance request and checks that the
 // returned response matches the expected.
 func assertChannelBalanceResp(t *harnessTest, node *lntest.HarnessNode,
 	expected *lnrpc.ChannelBalanceResponse) {
 
 	resp := getChannelBalance(t, node)
 	require.True(t.t, proto.Equal(expected, resp), "balance is incorrect")
+}
+
+// assertChannelBalance makes a ChannelBalance request and checks that the
+// returned response matches the expected.
+func assertChannelBalance(t *harnessTest, node *lntest.HarnessNode,
+	expected btcutil.Amount) {
+
+	resp := getChannelBalance(t, node)
+	require.EqualValues(t.t, expected, resp.Balance, "balance is incorrect")
 }
 
 // getChannelBalance gets the channel balance.
