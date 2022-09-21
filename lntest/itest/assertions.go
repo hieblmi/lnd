@@ -1295,6 +1295,31 @@ func assertChannelPolicyUpdate(t *testing.T, node *lntest.HarnessNode,
 	)
 }
 
+// assertWalletBalance makes a WalletBalance request and checks that the
+// returned response matches the expected.
+func assertWalletBalance(t *harnessTest, node *lntest.HarnessNode,
+	expected btcutil.Amount) {
+
+	resp := getWalletBalance(t, node)
+	require.EqualValues(
+		t.t, expected, resp.TotalBalance, "wallet balance is incorrect",
+	)
+}
+
+// getWalletBalance gets the wallet balance.
+func getWalletBalance(t *harnessTest,
+	node *lntest.HarnessNode) *lnrpc.WalletBalanceResponse {
+
+	t.t.Helper()
+
+	ctxt, _ := context.WithTimeout(context.Background(), defaultTimeout)
+	resp, err := node.WalletBalance(ctxt, &lnrpc.WalletBalanceRequest{})
+
+	require.NoError(t.t, err, "unable to get node's wallet balance")
+
+	return resp
+}
+
 func transactionInWallet(node *lntest.HarnessNode, txid chainhash.Hash) bool {
 	txStr := txid.String()
 
