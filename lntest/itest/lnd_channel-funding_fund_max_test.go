@@ -81,6 +81,15 @@ func testChannelFundMax(ht *lntemp.HarnessTest) {
 	)
 	reserveAmount := btcutil.Amount(reserveResp.RequiredReserve)
 
+	// Calculate reserve amount for one channel.
+	ctxb := context.Background()
+	reserveResp, _ := carol.WalletKitClient.RequiredReserve(
+		ctxb, &walletrpc.RequiredReserveRequest{
+			AdditionalPublicChannels: 1,
+		},
+	)
+	reserveAmount := btcutil.Amount(reserveResp.RequiredReserve)
+
 	var testCases = []*chanFundMaxTestCase{
 		{
 			name:                 "wallet amount is dust",
@@ -164,6 +173,23 @@ func testChannelFundMax(ht *lntemp.HarnessTest) {
 			initialWalletBalance: 100_000,
 			commitmentType:       lnrpc.CommitmentType_ANCHORS,
 			expectedBalanceAlice: btcutil.Amount(100_000) -
+				fundingFee(1, false),
+		},
+		{
+			name:           "anchor reserved value",
+			amount:         100_000,
+			commitmentType: lnrpc.CommitmentType_ANCHORS,
+			carolBalance: btcutil.Amount(100_000) -
+				fundingFee(1, true) - reserveAmount,
+		},
+		// Funding a private anchor channel should omit the achor
+		// reserve and produce no change output.
+		{
+			name:           "private anchor no reserved value",
+			private:        true,
+			amount:         100_000,
+			commitmentType: lnrpc.CommitmentType_ANCHORS,
+			carolBalance: btcutil.Amount(100_000) -
 				fundingFee(1, false),
 		},
 	}
