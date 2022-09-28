@@ -2252,7 +2252,14 @@ message OpenChannelRequest {
     be zero and is ignored.
     */
     bool fund_max = 26;
+
+    /*
+    Utxos is an optional parameter that allows to initiate the channel funding
+    flow with a specific selection of utxos.
+    */
+    string utxos = 27;
 }
+
 message OpenStatusUpdate {
     oneof update {
         /*

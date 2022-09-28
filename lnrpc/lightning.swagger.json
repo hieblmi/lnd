@@ -5797,6 +5797,10 @@
         "fund_max": {
           "type": "boolean",
           "description": "If set, then lnd will attempt to commit all the coins under control of the\ninternal wallet to open the channel, and the LocalFundingAmount field must\nbe zero and is ignored."
+        },
+        "utxos": {
+          "type": "string",
+          "description": "Utxos is an optional parameter that allows to initiate the channel funding\nflow with a specific selection of utxos."
         }
       }
     },
