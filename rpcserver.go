@@ -1922,17 +1922,47 @@ func (r *rpcServer) canOpenChannel() error {
 	return nil
 }
 
+// Comma separated list of UTXOs to Coins.
+func utxosToCoins(wallet *lnwallet.LightningWallet,
+	utxos string) ([]chanfunding.Coin, error) {
+
+	// Find all unlocked unspent witness outputs that satisfy the
+	// minimum number of confirmations required. Coin selection in
+	// this function currently ignores the configured coin selection
+	// strategy.
+	//TODO: hieblmi which minConf target should we choose?
+	coins, err := lnwallet.NewCoinSource(wallet).ListCoins(
+		6, math.MaxInt32,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	outPointMap := make(map[string]chanfunding.Coin)
+	var selectedCoins []chanfunding.Coin
+	for _, coin := range coins {
+		outPointMap[coin.OutPoint.String()] = coin
+	}
+
+	for _, utxo := range strings.Split(utxos, ",") {
+		if _, ok := outPointMap[utxo]; !ok {
+			return nil, fmt.Errorf("Utxo spcified not found "+
+				"in wallet: %s", utxo)
+		} else {
+			selectedCoins = append(selectedCoins, outPointMap[utxo])
+			rpcsLog.Debugf("Outpoint %s in wallet.\n", utxo)
+		}
+	}
+
+	return selectedCoins, nil
+}
+
 // parseOpenChannelReq parses an OpenChannelRequest message into an
 // InitFundingMsg struct. The logic is abstracted so that it can be shared
 // between OpenChannel and OpenChannelSync.
 func (r *rpcServer) parseOpenChannelReq(in *lnrpc.OpenChannelRequest,
 	isSync bool) (*funding.InitFundingMsg, error) {
 
-	rpcsLog.Debugf("[openchannel] request to NodeKey(%x) "+
-		"allocation(us=%v, them=%v)", in.NodePubkey,
-		in.LocalFundingAmount, in.PushSat)
-
-	localFundingAmt := btcutil.Amount(in.LocalFundingAmount)
 	remoteInitialBalance := btcutil.Amount(in.PushSat)
 
 	// We either allow the fundmax or the psbt flow hence we return an error
@@ -1979,13 +2009,32 @@ func (r *rpcServer) parseOpenChannelReq(in *lnrpc.OpenChannelRequest,
 
 	globalFeatureSet := r.server.featureMgr.Get(feature.SetNodeAnn)
 
+	localFundingAmt := btcutil.Amount(in.LocalFundingAmount)
+	utxos := in.Utxos
+
 	// If we are not committing the maximum viable balance towards a channel
 	// then the local funding amount must be specified. In case FundMax is
 	// set the funding amount is specified as interval between minimum
 	// funding amount and by the configured maximum channel size.
-	if !in.FundMax && localFundingAmt == 0 {
+	if localFundingAmt == 0 && !in.FundMax {
 		return nil, fmt.Errorf("local funding amount must be non-zero")
 	}
+
+	var coins []chanfunding.Coin
+	if len(utxos) > 0 {
+		coins, err := utxosToCoins(r.server.cc.Wallet, utxos)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse comma "+
+				"separated list of utxos (%v)", err)
+		}
+		for _, coin := range coins {
+			localFundingAmt += btcutil.Amount(coin.Value)
+		}
+	}
+
+	rpcsLog.Debugf("[openchannel] request to NodeKey(%x) "+
+		"allocation(us=%v, them=%v)", in.NodePubkey,
+		localFundingAmt, in.PushSat)
 
 	// Ensure that the initial balance of the remote party (if pushing
 	// satoshis) does not exceed the amount the local party has requested
@@ -2178,14 +2227,13 @@ func (r *rpcServer) parseOpenChannelReq(in *lnrpc.OpenChannelRequest,
 	// open a new channel. A stream is returned in place, this stream will
 	// be used to consume updates of the state of the pending channel.
 	return &funding.InitFundingMsg{
-		TargetPubkey:    nodePubKey,
-		ChainHash:       *r.cfg.ActiveNetParams.GenesisHash,
-		LocalFundingAmt: localFundingAmt,
-		BaseFee:         channelBaseFee,
-		FeeRate:         channelFeeRate,
-		PushAmt: lnwire.NewMSatFromSatoshis(
-			remoteInitialBalance,
-		),
+		TargetPubkey:      nodePubKey,
+		ChainHash:         *r.cfg.ActiveNetParams.GenesisHash,
+		LocalFundingAmt:   localFundingAmt,
+		BaseFee:           channelBaseFee,
+		FeeRate:           channelFeeRate,
+		Coins:             coins,
+		PushAmt:           lnwire.NewMSatFromSatoshis(remoteInitialBalance),
 		MinHtlcIn:         minHtlcIn,
 		FundingFeePerKw:   feeRate,
 		Private:           in.Private,
