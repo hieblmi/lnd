@@ -327,6 +327,11 @@ func (w *WalletAssembler) ProvisionChannel(r *Request) (Intent, error) {
 				return err
 			}
 
+		// TODO: hieblmi
+		case len(r.Coins) > 0:
+			log.Infof("hieblmi: coins found %#v ", r.Coins)
+			selectedCoins = r.Coins
+
 		// Otherwise do a normal coin selection where we target a given
 		// funding amount.
 		default:

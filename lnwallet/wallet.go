@@ -117,6 +117,9 @@ type InitFundingReserveMsg struct {
 	// channel.
 	LocalFundingAmt btcutil.Amount
 
+	// TODO: hieblmi
+	Coins []chanfunding.Coin
+
 	// RemoteFundingAmnt is the amount of funds the remote will contribute
 	// to this channel.
 	RemoteFundingAmt btcutil.Amount
@@ -823,6 +826,7 @@ func (l *LightningWallet) handleFundingReserveRequest(req *InitFundingReserveMsg
 					TaprootPubkey, true, DefaultAccountName,
 				)
 			},
+			Coins: req.Coins,
 		}
 		fundingIntent, err = req.ChanFunder.ProvisionChannel(
 			fundingReq,

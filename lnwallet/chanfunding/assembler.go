@@ -55,6 +55,9 @@ type Request struct {
 	// output.
 	LocalAmt btcutil.Amount
 
+	// TODO: hieblmi
+	Coins []Coin
+
 	// RemoteAmt is the amount of coins the remote party is contributing to
 	// the funding output.
 	RemoteAmt btcutil.Amount

@@ -221,6 +221,9 @@ type InitFundingMsg struct {
 	// (millionths).
 	FeeRate *uint64
 
+	// Manually selected coins to fund the channel with.
+	Coins []chanfunding.Coin
+
 	// PushAmt is the amount pushed to the counterparty.
 	PushAmt lnwire.MilliSatoshi
 
@@ -3921,6 +3924,7 @@ func (f *Manager) handleInitFundingMsg(msg *InitFundingMsg) {
 		localAmt       = msg.LocalFundingAmt
 		baseFee        = msg.BaseFee
 		feeRate        = msg.FeeRate
+		coins          = msg.Coins
 		minHtlcIn      = msg.MinHtlcIn
 		remoteCsvDelay = msg.RemoteCsvDelay
 		maxValue       = msg.MaxValueInFlight
@@ -4051,6 +4055,7 @@ func (f *Manager) handleInitFundingMsg(msg *InitFundingMsg) {
 		NodeAddr:         msg.Peer.Address(),
 		SubtractFees:     msg.SubtractFees,
 		LocalFundingAmt:  localAmt,
+		Coins:            coins,
 		RemoteFundingAmt: 0,
 		FundUpToMaxAmt:   msg.FundUpToMaxAmt,
 		MinFundAmt:       msg.MinFundAmt,
