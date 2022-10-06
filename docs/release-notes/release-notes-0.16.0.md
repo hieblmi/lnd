@@ -318,6 +318,10 @@ in the lnwire package](https://github.com/lightningnetwork/lnd/pull/7303)
 * [Sign/Verify messages and signatures for single
   addresses](https://github.com/lightningnetwork/lnd/pull/7231).
 
+* [Add a `fundmax` flag to `openchannel` to allow for the allocation of all
+  funds in a wallet](https://github.com/lightningnetwork/lnd/pull/6903) towards
+  a new channel opening.
+ 
 ## Code Health
 
 * [test: use `T.TempDir` to create temporary test
