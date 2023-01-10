@@ -1922,9 +1922,9 @@ func (r *rpcServer) canOpenChannel() error {
 	return nil
 }
 
-// parseOpenChannelReq parses an OpenChannelRequest message into an InitFundingMsg
-// struct. The logic is abstracted so that it can be shared between OpenChannel
-// and OpenChannelSync.
+// parseOpenChannelReq parses an OpenChannelRequest message into an
+// InitFundingMsg struct. The logic is abstracted so that it can be shared
+// between OpenChannel and OpenChannelSync.
 func (r *rpcServer) parseOpenChannelReq(in *lnrpc.OpenChannelRequest,
 	isSync bool) (*funding.InitFundingMsg, error) {
 
