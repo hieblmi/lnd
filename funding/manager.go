@@ -4052,6 +4052,8 @@ func (f *Manager) handleInitFundingMsg(msg *InitFundingMsg) {
 		SubtractFees:     msg.SubtractFees,
 		LocalFundingAmt:  localAmt,
 		RemoteFundingAmt: 0,
+		FundUpToMaxAmt:   msg.FundUpToMaxAmt,
+		MinFundAmt:       msg.MinFundAmt,
 		CommitFeePerKw:   commitFeePerKw,
 		FundingFeePerKw:  msg.FundingFeePerKw,
 		PushMSat:         msg.PushAmt,
