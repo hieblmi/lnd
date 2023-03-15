@@ -260,11 +260,49 @@ func (w *WalletAssembler) ProvisionChannel(r *Request) (Intent, error) {
 		log.Infof("Performing funding tx coin selection using %v "+
 			"sat/kw as fee rate", int64(r.FeeRate))
 
+		var (
+			// allCoins referres to the entirety of coins in our
+			// wallet that are available for funding a channel.
+			allCoins []Coin
+			// manuallySelectedCoins referres to the client-side
+			// selected coins that should be considered available
+			// for funding a channel.
+			manuallySelectedCoins []Coin
+			err                   error
+		)
+
+		// outpointsToCoins maps outpoints to coins in our wallet iff
+		// these coins are existent and returns an error otherwise.
+		outpointsToCoins := func(outpoints []*wire.OutPoint) ([]Coin,
+			error) {
+
+			var selectedCoins []Coin
+			for _, outpoint := range outpoints {
+				coin, err := w.cfg.CoinSource.CoinFromOutPoint(
+					*outpoint,
+				)
+				if err != nil {
+					return nil, err
+				}
+				selectedCoins = append(
+					selectedCoins, *coin,
+				)
+			}
+
+			return selectedCoins, nil
+		}
+
+		// convert manually selected outpoints to coins.
+		manuallySelectedCoins, err = outpointsToCoins(r.Outpoints)
+		if err != nil {
+			return err
+		}
+
 		// Find all unlocked unspent witness outputs that satisfy the
 		// minimum number of confirmations required. Coin selection in
 		// this function currently ignores the configured coin selection
 		// strategy.
-		coins, err := w.cfg.CoinSource.ListCoins(
+		allCoins, err = w.cfg.CoinSource.ListCoins(
 			r.MinConfs, math.MaxInt32,
 		)
 		if err != nil {
@@ -272,10 +310,19 @@ func (w *WalletAssembler) ProvisionChannel(r *Request) (Intent, error) {
 		}
 
 		var (
+			coins                []Coin
 			selectedCoins        []Coin
 			localContributionAmt btcutil.Amount
 			changeAmt            btcutil.Amount
 		)
+
+		// If coins were selected manually then we'll take those as the
+		// basis for coin selection and all available coins from our
+		// wallet otherwise.
+		coins = allCoins
+		if len(manuallySelectedCoins) > 0 {
+			coins = manuallySelectedCoins
+		}
 
 		// Perform coin selection over our available, unlocked unspent
 		// outputs in order to find enough coins to meet the funding
@@ -305,10 +352,41 @@ func (w *WalletAssembler) ProvisionChannel(r *Request) (Intent, error) {
 		// we will call the specialized coin selection function for
 		// that.
 		case r.FundUpToMaxAmt != 0 && r.MinFundAmt != 0:
+
+			// We need to ensure, that manullay selected coins,
+			// which are spent entirely on the channel funding,
+			// leave enough funds in the wallet to cover for a
+			// reserve.
+			reserve := r.WalletReserve
+			if len(manuallySelectedCoins) > 0 {
+				sumCoins := func(coins []Coin) btcutil.Amount {
+					var sum btcutil.Amount
+					for _, coin := range coins {
+						sum += btcutil.Amount(
+							coin.Value,
+						)
+					}
+
+					return sum
+				}
+
+				sumManual := sumCoins(manuallySelectedCoins)
+				sumAll := sumCoins(allCoins)
+
+				if sumAll-sumManual >= reserve {
+					// If sufficient reserve funds are
+					// available we don't have to provide
+					// for it during coin selection. The
+					// manually selected coins can be spent
+					// entirely on the channel funding.
+					reserve = 0
+				}
+			}
+
 			selectedCoins, localContributionAmt, changeAmt,
 				err = CoinSelectUpToAmount(
 				r.FeeRate, r.MinFundAmt, r.FundUpToMaxAmt,
-				r.WalletReserve, w.cfg.DustLimit, coins,
+				reserve, w.cfg.DustLimit, coins,
 			)
 			if err != nil {
 				return err
