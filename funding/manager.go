@@ -275,6 +275,13 @@ type InitFundingMsg struct {
 	// minimum amount to commit to.
 	MinFundAmt btcutil.Amount
 
+	// Outpoints is a list of client-selected outpoints that should be used
+	// for funding a channel. If LocalFundingAmt is specified then this
+	// amount is allocated from the sum of outpoints towards funding. If
+	// the FundUpToMaxAmt is specified the entirety of selected funds is
+	// allocated towards channel funding.
+	Outpoints []*wire.OutPoint
+
 	// ChanFunder is an optional channel funder that allows the caller to
 	// control exactly how the channel funding is carried out. If not
 	// specified, then the default chanfunding.WalletAssembler will be
@@ -3970,6 +3977,7 @@ func (f *Manager) handleInitFundingMsg(msg *InitFundingMsg) {
 		maxHtlcs       = msg.MaxHtlcs
 		maxCSV         = msg.MaxLocalCsv
 		chanReserve    = msg.RemoteChanReserve
+		outpoints      = msg.Outpoints
 	)
 
 	// If no maximum CSV delay was set for this channel, we use our default
@@ -4098,6 +4106,7 @@ func (f *Manager) handleInitFundingMsg(msg *InitFundingMsg) {
 		FundUpToMaxAmt:    msg.FundUpToMaxAmt,
 		MinFundAmt:        msg.MinFundAmt,
 		RemoteChanReserve: chanReserve,
+		Outpoints:         outpoints,
 		CommitFeePerKw:    commitFeePerKw,
 		FundingFeePerKw:   msg.FundingFeePerKw,
 		PushMSat:          msg.PushAmt,

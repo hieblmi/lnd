@@ -1962,6 +1962,33 @@ func (r *rpcServer) parseOpenChannelReq(in *lnrpc.OpenChannelRequest,
 			"the channel opening")
 	}
 
+	// toWireOutpoints converts a list of outpoints from the rpc format to
+	// the wire format.
+	toWireOutpoints := func(outpoints []*lnrpc.OutPoint) ([]*wire.OutPoint,
+		error) {
+
+		var wireOutpoints []*wire.OutPoint
+		for _, outpoint := range outpoints {
+			hash, err := chainhash.NewHashFromStr(outpoint.TxidStr)
+			if err != nil {
+				return nil, fmt.Errorf("rpcserver: cannot " +
+					"create chainhash")
+			}
+
+			wireOutpoint := wire.NewOutPoint(
+				hash, outpoint.OutputIndex,
+			)
+			wireOutpoints = append(wireOutpoints, wireOutpoint)
+		}
+
+		return wireOutpoints, nil
+	}
+	outpoints, err := toWireOutpoints(in.Outpoints)
+	if err != nil {
+		return nil, fmt.Errorf("rpcserver: can't create outpoints "+
+			"%w", err)
+	}
+
 	// If the FundMax flag is set, ensure that the acceptable minimum local
 	// amount adheres to the amount to be pushed to the remote, and to
 	// current rules, while also respecting the settings for the maximum
@@ -2198,6 +2225,7 @@ func (r *rpcServer) parseOpenChannelReq(in *lnrpc.OpenChannelRequest,
 		ChannelType:       channelType,
 		FundUpToMaxAmt:    fundUpToMaxAmt,
 		MinFundAmt:        minFundAmt,
+		Outpoints:         outpoints,
 	}, nil
 }
 
