@@ -2274,6 +2274,11 @@ message OpenChannelRequest {
     be zero and is ignored.
     */
     bool fund_max = 26;
+
+    /*
+    A list of selected outpoints that are allocated for channel funding.
+    */
+    repeated OutPoint outpoints = 27;
 }
 message OpenStatusUpdate {
     oneof update {
