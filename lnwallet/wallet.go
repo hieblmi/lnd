@@ -131,6 +131,13 @@ type InitFundingReserveMsg struct {
 	// allocated iff the FundUpToMaxAmt is set.
 	MinFundAmt btcutil.Amount
 
+	// Outpoints is a list of client-selected outpoints that should be used
+	// for funding a channel. If LocalFundingAmt is specified then this
+	// amount is allocated from the sum of outpoints towards funding. If the
+	// FundUpToMaxAmt is specified the entirety of selected funds is
+	// allocated towards channel funding.
+	Outpoints []*wire.OutPoint
+
 	// RemoteChanReserve is the channel reserve we required for the remote
 	// peer.
 	RemoteChanReserve btcutil.Amount
@@ -881,6 +888,41 @@ func (l *LightningWallet) handleFundingReserveRequest(req *InitFundingReserveMsg
 			}
 		}
 
+		// Before we can provision a channel with provided outpoints we
+		// have to ensure that they remain unspent. We'll abort the
+		// funding process if an outpoint is not contained in the list
+		// of unspent outpoints.
+		if len(req.Outpoints) > 0 {
+			err := l.WithCoinSelectLock(func() error {
+				utxos, err := l.ListUnspentWitnessFromDefaultAccount(
+					req.MinConfs, math.MaxInt32,
+				)
+				if err != nil {
+					return err
+				}
+
+				unspent := make(map[chainhash.Hash]uint32)
+				for _, utxo := range utxos {
+					unspent[utxo.OutPoint.Hash] = utxo.OutPoint.Index
+				}
+				for _, outpoint := range req.Outpoints {
+					idx, ok := unspent[outpoint.Hash]
+					if !ok {
+						return fmt.Errorf("Not unspent output")
+					} else if outpoint.Index != idx {
+						return fmt.Errorf("Not unspent output")
+					}
+
+				}
+				return nil
+			})
+			if err != nil {
+				req.err <- err
+				req.resp <- nil
+				return
+			}
+		}
+
 		// Coin selection is done on the basis of sat/kw, so we'll use
 		// the fee rate passed in to perform coin selection.
 		fundingReq := &chanfunding.Request{
@@ -895,6 +937,7 @@ func (l *LightningWallet) handleFundingReserveRequest(req *InitFundingReserveMsg
 			WalletReserve: l.RequiredReserve(
 				uint32(numAnchorChans),
 			),
+			Outpoints:    req.Outpoints,
 			MinConfs:     req.MinConfs,
 			SubtractFees: req.SubtractFees,
 			FeeRate:      req.FundingFeePerKw,
