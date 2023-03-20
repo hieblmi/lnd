@@ -523,4 +523,8 @@ var allTestCases = []*lntest.TestCase{
 		Name:     "channel fundmax",
 		TestFunc: testChannelFundMax,
 	},
+	{
+		Name:     "utxo selection funding",
+		TestFunc: testChannelUtxoSelection,
+	},
 }

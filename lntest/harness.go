@@ -890,6 +890,13 @@ type OpenChannelParams struct {
 	// FundMax is a boolean indicating whether the channel should be funded
 	// with the maximum possible amount from the wallet.
 	FundMax bool
+
+	// Outpoints is a list of client-selected outpoints that should be used
+	// for funding a channel. If Amt is specified then this amount is
+	// allocated from the sum of outpoints towards funding. If the
+	// FundMax flag is specified the entirety of selected funds is
+	// allocated towards channel funding.
+	Outpoints []*lnrpc.OutPoint
 }
 
 // prepareOpenChannel waits for both nodes to be synced to chain and returns an
@@ -931,6 +938,7 @@ func (h *HarnessTest) prepareOpenChannel(srcNode, destNode *node.HarnessNode,
 		UseBaseFee:         p.UseBaseFee,
 		UseFeeRate:         p.UseFeeRate,
 		FundMax:            p.FundMax,
+		Outpoints:          p.Outpoints,
 	}
 }
 
