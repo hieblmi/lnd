@@ -15,6 +15,7 @@ type Querier interface {
 	AddV1ChannelProof(ctx context.Context, arg AddV1ChannelProofParams) (sql.Result, error)
 	AddV2ChannelProof(ctx context.Context, arg AddV2ChannelProofParams) (sql.Result, error)
 	ClearKVInvoiceHashIndex(ctx context.Context) error
+	CountPayments(ctx context.Context) (int64, error)
 	CountZombieChannels(ctx context.Context, version int16) (int64, error)
 	CreateChannel(ctx context.Context, arg CreateChannelParams) (int64, error)
 	DeleteCanceledInvoices(ctx context.Context) (sql.Result, error)
@@ -31,10 +32,19 @@ type Querier interface {
 	DeleteZombieChannel(ctx context.Context, arg DeleteZombieChannelParams) (sql.Result, error)
 	FetchAMPSubInvoiceHTLCs(ctx context.Context, arg FetchAMPSubInvoiceHTLCsParams) ([]FetchAMPSubInvoiceHTLCsRow, error)
 	FetchAMPSubInvoices(ctx context.Context, arg FetchAMPSubInvoicesParams) ([]AmpSubInvoice, error)
+	// Fetch all inflight attempts across all payments
+	FetchAllInflightAttempts(ctx context.Context) ([]PaymentHtlcAttempt, error)
+	FetchHopLevelCustomRecords(ctx context.Context, hopIds []int64) ([]PaymentHopCustomRecord, error)
+	FetchHopsForAttempts(ctx context.Context, htlcAttemptIndices []int64) ([]FetchHopsForAttemptsRow, error)
+	FetchHtlcAttemptsForPayments(ctx context.Context, paymentIds []int64) ([]FetchHtlcAttemptsForPaymentsRow, error)
+	FetchPayment(ctx context.Context, paymentIdentifier []byte) (FetchPaymentRow, error)
+	FetchPaymentLevelFirstHopCustomRecords(ctx context.Context, paymentIds []int64) ([]PaymentFirstHopCustomRecord, error)
+	FetchPaymentsByIDs(ctx context.Context, paymentIds []int64) ([]FetchPaymentsByIDsRow, error)
 	// FetchPendingInvoices returns all invoices in a pending state (open or
 	// accepted). The invoices_state_idx index on the state column makes this a
 	// fast index scan rather than a full table scan.
 	FetchPendingInvoices(ctx context.Context, arg FetchPendingInvoicesParams) ([]Invoice, error)
+	FetchRouteLevelFirstHopCustomRecords(ctx context.Context, htlcAttemptIndices []int64) ([]PaymentAttemptFirstHopCustomRecord, error)
 	FetchSettledAMPSubInvoices(ctx context.Context, arg FetchSettledAMPSubInvoicesParams) ([]FetchSettledAMPSubInvoicesRow, error)
 	// FilterInvoicesByAddIndex returns invoices whose add_index (primary key id)
 	// is greater than or equal to the given value, ordered by id. Because id is
@@ -58,6 +68,7 @@ type Querier interface {
 	// It returns invoices in descending id order up to and including add_index_let.
 	// See FilterInvoicesForward for the expected Go-side defaults.
 	FilterInvoicesReverse(ctx context.Context, arg FilterInvoicesReverseParams) ([]Invoice, error)
+	FilterPayments(ctx context.Context, arg FilterPaymentsParams) ([]FilterPaymentsRow, error)
 	GetAMPInvoiceID(ctx context.Context, setID []byte) (int64, error)
 	GetChannelAndNodesBySCID(ctx context.Context, arg GetChannelAndNodesBySCIDParams) (GetChannelAndNodesBySCIDRow, error)
 	GetChannelByOutpointWithPolicies(ctx context.Context, arg GetChannelByOutpointWithPoliciesParams) (GetChannelByOutpointWithPoliciesRow, error)
