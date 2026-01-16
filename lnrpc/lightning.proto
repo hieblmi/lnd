@@ -1334,6 +1334,13 @@ message ListUnspentRequest {
 message ListUnspentResponse {
     // A list of utxos
     repeated Utxo utxos = 1;
+
+    /*
+    The block height at which the wallet's view is synced. If this is less
+    than the current chain tip height (from GetInfo or block notifications),
+    the UTXO list may not include transactions from recent blocks.
+    */
+    int32 wallet_synced_height = 2;
 }
 
 /*
