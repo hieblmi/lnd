@@ -95,6 +95,13 @@
 
 ## RPC Updates
 
+* [A new `wallet_synced` field has been
+  added](https://github.com/lightningnetwork/lnd/pull/10507) to the `GetInfo`
+  RPC response. This field indicates whether the wallet is fully synced to the
+  best chain, providing the wallet's internal sync state independently from the
+  composite `synced_to_chain` field which also considers router and blockbeat
+  dispatcher states.
+
 ## lncli Updates
 
 ## Breaking Changes
