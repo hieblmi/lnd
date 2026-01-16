@@ -432,11 +432,17 @@ func (w *WalletKit) ListUnspent(ctx context.Context,
 	// any other concurrent processes attempting to lock any UTXOs which may
 	// be shown available to us.
 	var utxos []*lnwallet.Utxo
+	var walletHeight int32
 	err = w.cfg.CoinSelectionLocker.WithCoinSelectLock(func() error {
 		utxos, err = w.cfg.Wallet.ListUnspentWitness(
 			minConfs, maxConfs, req.Account,
 		)
+		if err != nil {
+			return err
+		}
 
+		// Get the wallet's last indexed height to include in response.
+		walletHeight, _, err = w.cfg.Wallet.LastIndexedBlock()
 		return err
 	})
 	if err != nil {
@@ -449,7 +455,8 @@ func (w *WalletKit) ListUnspent(ctx context.Context,
 	}
 
 	return &ListUnspentResponse{
-		Utxos: rpcUtxos,
+		Utxos:              rpcUtxos,
+		WalletSyncedHeight: walletHeight,
 	}, nil
 }
 

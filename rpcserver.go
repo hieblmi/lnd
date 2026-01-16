@@ -1206,10 +1206,17 @@ func (r *rpcServer) ListUnspent(ctx context.Context,
 	// any other concurrent processes attempting to lock any UTXOs which may
 	// be shown available to us.
 	var utxos []*lnwallet.Utxo
+	var walletHeight int32
 	err = r.server.cc.Wallet.WithCoinSelectLock(func() error {
 		utxos, err = r.server.cc.Wallet.ListUnspentWitness(
 			minConfs, maxConfs, in.Account,
 		)
+		if err != nil {
+			return err
+		}
+
+		// Get the wallet's last indexed height to include in response.
+		walletHeight, _, err = r.server.cc.Wallet.LastIndexedBlock()
 		return err
 	})
 	if err != nil {
@@ -1230,7 +1237,8 @@ func (r *rpcServer) ListUnspent(ctx context.Context,
 		maxStr, utxos)
 
 	return &lnrpc.ListUnspentResponse{
-		Utxos: rpcUtxos,
+		Utxos:              rpcUtxos,
+		WalletSyncedHeight: walletHeight,
 	}, nil
 }
 
