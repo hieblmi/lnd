@@ -530,6 +530,13 @@ type WalletController interface {
 	// known to the wallet, expressed in Unix epoch time
 	IsSynced() (bool, int64, error)
 
+	// LastIndexedBlock returns the block height and hash of the last block
+	// the wallet has indexed. This may lag behind the chain backend's tip
+	// (returned by BlockChainIO.GetBestBlock) during block processing.
+	// Callers can compare this with chainntnfs block notifications to
+	// detect if query results might be stale.
+	LastIndexedBlock() (int32, *chainhash.Hash, error)
+
 	// GetRecoveryInfo returns a boolean indicating whether the wallet is
 	// started in recovery mode. It also returns a float64 indicating the
 	// recovery progress made so far.

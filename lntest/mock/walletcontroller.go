@@ -266,6 +266,11 @@ func (w *WalletController) IsSynced() (bool, int64, error) {
 	return true, int64(0), nil
 }
 
+// LastIndexedBlock currently returns dummy values.
+func (w *WalletController) LastIndexedBlock() (int32, *chainhash.Hash, error) {
+	return 0, &chainhash.Hash{}, nil
+}
+
 // GetRecoveryInfo currently returns dummy values.
 func (w *WalletController) GetRecoveryInfo() (bool, float64, error) {
 	return true, float64(1), nil

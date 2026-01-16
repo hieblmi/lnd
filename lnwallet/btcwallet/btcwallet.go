@@ -1727,6 +1727,15 @@ func (b *BtcWallet) IsSynced() (bool, int64, error) {
 	return true, bestTimestamp, nil
 }
 
+// LastIndexedBlock returns the wallet's last indexed block height and hash.
+// This may lag behind the chain backend during block processing.
+//
+// NOTE: This is part of the WalletController interface.
+func (b *BtcWallet) LastIndexedBlock() (int32, *chainhash.Hash, error) {
+	syncState := b.wallet.SyncedTo()
+	return syncState.Height, &syncState.Hash, nil
+}
+
 // GetRecoveryInfo returns a boolean indicating whether the wallet is started
 // in recovery mode. It also returns a float64, ranging from 0 to 1,
 // representing the recovery progress made so far.
