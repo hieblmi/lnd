@@ -3422,6 +3422,9 @@ func (r *rpcServer) GetInfo(_ context.Context,
 	nodeColor := graphdb.EncodeHexColor(nodeAnn.RGBColor)
 	version := build.Version() + " commit=" + build.Commit
 
+	rpcsLog.Debugf("GetInfo: syncInfo.isSynced=%v, syncInfo.isWalletSynced=%v",
+		syncInfo.isSynced, syncInfo.isWalletSynced)
+
 	return &lnrpc.GetInfoResponse{
 		IdentityPubkey:            encodedIDPub,
 		NumPendingChannels:        nPendingChannels,
@@ -3443,6 +3446,7 @@ func (r *rpcServer) GetInfo(_ context.Context,
 		Features:                  features,
 		RequireHtlcInterceptor:    r.cfg.RequireInterceptor,
 		StoreFinalHtlcResolutions: r.cfg.StoreFinalHtlcResolutions,
+		WalletSynced:              syncInfo.isWalletSynced,
 	}, nil
 }
 
@@ -9461,6 +9465,10 @@ type chainSyncInfo struct {
 	// - blockbeat dispatcher.
 	isSynced bool
 
+	// isWalletSynced specifies whether the wallet is synced to the best
+	// chain, independent of the router and blockbeat sync status.
+	isWalletSynced bool
+
 	// bestHeight is the current height known to the chain backend.
 	bestHeight int32
 
@@ -9489,10 +9497,11 @@ func (r *rpcServer) getChainSyncInfo() (*chainSyncInfo, error) {
 
 	// Create an info to be returned.
 	info := &chainSyncInfo{
-		isSynced:   isSynced,
-		bestHeight: bestHeight,
-		blockHash:  *bestHash,
-		timestamp:  bestHeaderTimestamp,
+		isSynced:       isSynced,
+		isWalletSynced: isSynced,
+		bestHeight:     bestHeight,
+		blockHash:      *bestHash,
+		timestamp:      bestHeaderTimestamp,
 	}
 
 	// Exit early if the wallet is not synced.
