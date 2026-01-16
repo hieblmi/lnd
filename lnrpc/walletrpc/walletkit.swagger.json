@@ -1922,6 +1922,11 @@
             "$ref": "#/definitions/lnrpcUtxo"
           },
           "description": "A list of utxos satisfying the specified number of confirmations."
+        },
+        "wallet_synced_height": {
+          "type": "integer",
+          "format": "int32",
+          "description": "The block height at which the wallet's view is synced. If this is less\nthan the current chain tip height (from GetInfo or block notifications),\nthe UTXO list may not include transactions from recent blocks."
         }
       }
     },
