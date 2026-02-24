@@ -109,8 +109,10 @@ var (
 // attempt, including whether it was settled or failed.
 type htlcStatus struct {
 	*HTLCAttemptInfo
-	settle  *lntypes.Preimage
-	failure *HTLCFailReason
+	settle     *lntypes.Preimage
+	settleTime time.Time
+	failure    *HTLCFailReason
+	failTime   time.Time
 }
 
 // payment is a helper structure that holds basic information on a test payment,
@@ -232,71 +234,71 @@ func assertRouteEqual(t *testing.T, a, b *route.Route) error {
 // assertPaymentInfo retrieves the payment referred to by hash and verifies the
 // expected values.
 func assertPaymentInfo(t *testing.T, p DB, hash lntypes.Hash,
-	c *PaymentCreationInfo, f *FailureReason,
-	a *htlcStatus) {
+	c *PaymentCreationInfo, f *FailureReason, a *htlcStatus) {
 
 	t.Helper()
 
-	ctx := t.Context()
-
-	payment, err := p.FetchPayment(ctx, hash)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if !reflect.DeepEqual(payment.Info, c) {
-		t.Fatalf("PaymentCreationInfos don't match: %v vs %v",
-			spew.Sdump(payment.Info), spew.Sdump(c))
-	}
+	payment, err := p.FetchPayment(t.Context(), hash)
+	require.NoError(t, err)
+	require.Equal(t, c, payment.Info, "PaymentCreationInfos don't match")
 
 	if f != nil {
-		if *payment.FailureReason != *f {
-			t.Fatal("unexpected failure reason")
-		}
+		require.NotNil(
+			t, payment.FailureReason, "expected failure reason",
+		)
+		require.Equal(
+			t, *f, *payment.FailureReason,
+			"unexpected failure reason",
+		)
 	} else {
-		if payment.FailureReason != nil {
-			t.Fatal("unexpected failure reason")
-		}
+		require.Nil(
+			t, payment.FailureReason, "expected no failure reason",
+		)
 	}
 
 	if a == nil {
-		if len(payment.HTLCs) > 0 {
-			t.Fatal("expected no htlcs")
-		}
-
+		require.Empty(t, payment.HTLCs, "expected no htlcs")
 		return
 	}
 
+	require.GreaterOrEqual(t, len(payment.HTLCs), int(a.AttemptID)+1,
+		"HTLC with attempt ID %v not found", a.AttemptID)
 	htlc := payment.HTLCs[a.AttemptID]
-	if err := assertRouteEqual(t, &htlc.Route, &a.Route); err != nil {
-		t.Fatal("routes do not match")
-	}
-
-	if htlc.AttemptID != a.AttemptID {
-		t.Fatalf("unnexpected attempt ID %v, expected %v",
-			htlc.AttemptID, a.AttemptID)
-	}
+	require.NoError(t, assertRouteEqual(t, &htlc.Route, &a.Route),
+		"routes do not match")
+	require.Equal(t, a.AttemptID, htlc.AttemptID, "unexpected attempt ID")
 
 	if a.failure != nil {
-		if htlc.Failure == nil {
-			t.Fatalf("expected HTLC to be failed")
-		}
-
-		if htlc.Failure.Reason != *a.failure {
-			t.Fatalf("expected HTLC failure %v, had %v",
-				*a.failure, htlc.Failure.Reason)
-		}
-	} else if htlc.Failure != nil {
-		t.Fatalf("expected no HTLC failure")
+		require.NotNil(t, htlc.Failure, "expected HTLC to be failed")
+		require.Equal(t, *a.failure, htlc.Failure.Reason,
+			"expected HTLC failure")
+	} else {
+		require.Nil(t, htlc.Failure, "expected no HTLC failure")
 	}
 
 	if a.settle != nil {
-		if htlc.Settle.Preimage != *a.settle {
-			t.Fatalf("Preimages don't match: %x vs %x",
-				htlc.Settle.Preimage, a.settle)
-		}
-	} else if htlc.Settle != nil {
-		t.Fatal("expected no settle info")
+		require.Equal(
+			t, *a.settle, htlc.Settle.Preimage,
+			"expected HTLC settle preimage",
+		)
+	} else {
+		require.Nil(t, htlc.Settle, "expected no settle info")
+	}
+
+	if !a.settleTime.IsZero() {
+		// Normalize to UTC to ensure consistent timezone comparison.
+		require.Equal(
+			t, a.settleTime.UTC(), htlc.Settle.SettleTime.UTC(),
+			"SettleTimes don't match",
+		)
+	}
+
+	if !a.failTime.IsZero() {
+		// Normalize to UTC to ensure consistent timezone comparison.
+		require.Equal(
+			t, htlc.Failure.FailTime.UTC(), a.failTime.UTC(),
+			"FailTimes don't match",
+		)
 	}
 }
 
@@ -1992,10 +1994,12 @@ func TestSwitchFail(t *testing.T) {
 	require.NoError(t, err, "unable to register attempt")
 
 	htlcReason := HTLCFailUnreadable
+	htlcFailTime := time.Unix(5000, 0)
 	_, err = paymentDB.FailAttempt(
 		ctx, info.PaymentIdentifier, attempt.AttemptID,
 		&HTLCFailInfo{
-			Reason: htlcReason,
+			Reason:   htlcReason,
+			FailTime: htlcFailTime,
 		},
 	)
 	if err != nil {
@@ -2008,6 +2012,7 @@ func TestSwitchFail(t *testing.T) {
 	htlc := &htlcStatus{
 		HTLCAttemptInfo: attempt,
 		failure:         &htlcReason,
+		failTime:        htlcFailTime,
 	}
 
 	assertPaymentInfo(t, paymentDB, info.PaymentIdentifier, info, nil, htlc)
@@ -2173,10 +2178,12 @@ func TestMultiShard(t *testing.T) {
 		// Fail the second attempt.
 		a := attempts[1]
 		htlcFail := HTLCFailUnreadable
+		secondFailTime := time.Unix(6000, 0)
 		_, err = paymentDB.FailAttempt(
 			ctx, info.PaymentIdentifier, a.AttemptID,
 			&HTLCFailInfo{
-				Reason: htlcFail,
+				Reason:   htlcFail,
+				FailTime: secondFailTime,
 			},
 		)
 		if err != nil {
@@ -2186,6 +2193,7 @@ func TestMultiShard(t *testing.T) {
 		htlc := &htlcStatus{
 			HTLCAttemptInfo: a,
 			failure:         &htlcFail,
+			failTime:        secondFailTime,
 		}
 		assertPaymentInfo(
 			t, paymentDB, info.PaymentIdentifier, info, nil, htlc,
@@ -2204,10 +2212,12 @@ func TestMultiShard(t *testing.T) {
 
 		var firstFailReason *FailureReason
 		if test.settleFirst {
+			firstSettleTime := time.Unix(1000, 0)
 			_, err := paymentDB.SettleAttempt(
 				ctx, info.PaymentIdentifier, a.AttemptID,
 				&HTLCSettleInfo{
-					Preimage: preimg,
+					Preimage:   preimg,
+					SettleTime: firstSettleTime,
 				},
 			)
 			if err != nil {
@@ -2215,17 +2225,21 @@ func TestMultiShard(t *testing.T) {
 					"received, got: %v", err)
 			}
 
-			// Assert that the HTLC has had the preimage recorded.
+			// Assert that the HTLC has had the preimage and
+			// settle time recorded.
 			htlc.settle = &preimg
+			htlc.settleTime = firstSettleTime
 			assertPaymentInfo(
 				t, paymentDB, info.PaymentIdentifier, info, nil,
 				htlc,
 			)
 		} else {
+			firstFailTime := time.Unix(2000, 0)
 			_, err := paymentDB.FailAttempt(
 				ctx, info.PaymentIdentifier, a.AttemptID,
 				&HTLCFailInfo{
-					Reason: htlcFail,
+					Reason:   htlcFail,
+					FailTime: firstFailTime,
 				},
 			)
 			if err != nil {
@@ -2235,6 +2249,7 @@ func TestMultiShard(t *testing.T) {
 
 			// Assert the failure was recorded.
 			htlc.failure = &htlcFail
+			htlc.failTime = firstFailTime
 			assertPaymentInfo(
 				t, paymentDB, info.PaymentIdentifier, info, nil,
 				htlc,
@@ -2297,25 +2312,30 @@ func TestMultiShard(t *testing.T) {
 		}
 		if test.settleLast {
 			// Settle the last outstanding attempt.
+			lastSettleTime := time.Unix(3000, 0)
 			_, err = paymentDB.SettleAttempt(
 				ctx, info.PaymentIdentifier, a.AttemptID,
 				&HTLCSettleInfo{
-					Preimage: preimg,
+					Preimage:   preimg,
+					SettleTime: lastSettleTime,
 				},
 			)
 			require.NoError(t, err, "unable to settle")
 
 			htlc.settle = &preimg
+			htlc.settleTime = lastSettleTime
 			assertPaymentInfo(
 				t, paymentDB, info.PaymentIdentifier,
 				info, firstFailReason, htlc,
 			)
 		} else {
 			// Fail the attempt.
+			lastFailTime := time.Unix(4000, 0)
 			_, err := paymentDB.FailAttempt(
 				ctx, info.PaymentIdentifier, a.AttemptID,
 				&HTLCFailInfo{
-					Reason: htlcFail,
+					Reason:   htlcFail,
+					FailTime: lastFailTime,
 				},
 			)
 			if err != nil {
@@ -2325,6 +2345,7 @@ func TestMultiShard(t *testing.T) {
 
 			// Assert the failure was recorded.
 			htlc.failure = &htlcFail
+			htlc.failTime = lastFailTime
 			assertPaymentInfo(
 				t, paymentDB, info.PaymentIdentifier, info,
 				firstFailReason, htlc,
