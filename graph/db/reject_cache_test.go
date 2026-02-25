@@ -1,10 +1,10 @@
 package graphdb
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/lightningnetwork/lnd/lnwire"
+	"github.com/stretchr/testify/require"
 )
 
 // TestRejectCache checks the behavior of the rejectCache with respect to insertion,
@@ -18,9 +18,7 @@ func TestRejectCache(t *testing.T) {
 	// As a sanity check, assert that querying the empty cache does not
 	// return an entry.
 	_, ok := c.get(lnwire.GossipVersion1, 0)
-	if ok {
-		t.Fatalf("reject cache should be empty")
-	}
+	require.False(t, ok)
 
 	// Now, fill up the cache entirely.
 	for i := uint64(0); i < cacheSize; i++ {
@@ -53,9 +51,7 @@ func TestRejectCache(t *testing.T) {
 
 	// Assert that exactly one element has been evicted.
 	numEvicted := len(evicted)
-	if numEvicted != 1 {
-		t.Fatalf("expected one evicted entry, got: %d", numEvicted)
-	}
+	require.Equal(t, 1, numEvicted)
 
 	// Remove the highest item which initially caused the eviction and
 	// reinsert the element that was evicted prior.
@@ -88,15 +84,10 @@ func assertHasEntries(t *testing.T, c *rejectCache, start, end uint64) {
 
 	for i := start; i < end; i++ {
 		entry, ok := c.get(lnwire.GossipVersion1, i)
-		if !ok {
-			t.Fatalf("reject cache should contain chan %d", i)
-		}
+		require.True(t, ok)
 
 		expEntry := entryForInt(i)
-		if !reflect.DeepEqual(entry, expEntry) {
-			t.Fatalf("entry mismatch, want: %v, got: %v",
-				expEntry, entry)
-		}
+		require.Equal(t, expEntry, entry)
 	}
 }
 

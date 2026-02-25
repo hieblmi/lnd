@@ -12,7 +12,6 @@ import (
 	prand "math/rand"
 	"net"
 	"reflect"
-	"runtime"
 	"sync"
 	"testing"
 	"time"
@@ -846,9 +845,7 @@ func TestDisconnectBlockAtHeight(t *testing.T) {
 	graph := MakeTestGraph(t)
 
 	sourceNode := createTestVertex(t, lnwire.GossipVersion1)
-	if err := graph.SetSourceNode(ctx, sourceNode); err != nil {
-		t.Fatalf("unable to set source node: %v", err)
-	}
+	require.NoError(t, graph.SetSourceNode(ctx, sourceNode))
 
 	// We'd like to test the insertion/deletion of edges, so we create two
 	// vertexes to connect.
@@ -896,17 +893,9 @@ func TestDisconnectBlockAtHeight(t *testing.T) {
 	)
 
 	// Now add all these new edges to the database.
-	if err := graph.AddChannelEdge(ctx, edgeInfo); err != nil {
-		t.Fatalf("unable to create channel edge: %v", err)
-	}
-
-	if err := graph.AddChannelEdge(ctx, edgeInfo2); err != nil {
-		t.Fatalf("unable to create channel edge: %v", err)
-	}
-
-	if err := graph.AddChannelEdge(ctx, edgeInfo3); err != nil {
-		t.Fatalf("unable to create channel edge: %v", err)
-	}
+	require.NoError(t, graph.AddChannelEdge(ctx, edgeInfo))
+	require.NoError(t, graph.AddChannelEdge(ctx, edgeInfo2))
+	require.NoError(t, graph.AddChannelEdge(ctx, edgeInfo3))
 	assertEdgeWithNoPoliciesInCache(t, graph, edgeInfo)
 	assertEdgeWithNoPoliciesInCache(t, graph, edgeInfo2)
 	assertEdgeWithNoPoliciesInCache(t, graph, edgeInfo3)
@@ -914,58 +903,37 @@ func TestDisconnectBlockAtHeight(t *testing.T) {
 	// Call DisconnectBlockAtHeight, which should prune every channel
 	// that has a funding height of 'height' or greater.
 	removed, err := graph.DisconnectBlockAtHeight(uint32(height))
-	if err != nil {
-		t.Fatalf("unable to prune %v", err)
-	}
+	require.NoError(t, err)
 	assertNoEdge(t, graph, edgeInfo.ChannelID)
 	assertNoEdge(t, graph, edgeInfo2.ChannelID)
 	assertEdgeWithNoPoliciesInCache(t, graph, edgeInfo3)
 
 	// The two edges should have been removed.
-	if len(removed) != 2 {
-		t.Fatalf("expected two edges to be removed from graph, "+
-			"only %d were", len(removed))
-	}
-	if removed[0].ChannelID != edgeInfo.ChannelID {
-		t.Fatalf("expected edge to be removed from graph")
-	}
-	if removed[1].ChannelID != edgeInfo2.ChannelID {
-		t.Fatalf("expected edge to be removed from graph")
-	}
+	require.Len(t, removed, 2)
+	require.Equal(t, edgeInfo.ChannelID, removed[0].ChannelID)
+	require.Equal(t, edgeInfo2.ChannelID, removed[1].ChannelID)
 
 	// The two first edges should be removed from the db.
 	has, isZombie, err := graph.HasChannelEdge(
 		lnwire.GossipVersion1, edgeInfo.ChannelID,
 	)
 	require.NoError(t, err, "unable to query for edge")
-	if has {
-		t.Fatalf("edge1 was not pruned from the graph")
-	}
-	if isZombie {
-		t.Fatal("reorged edge1 should not be marked as zombie")
-	}
+	require.False(t, has)
+	require.False(t, isZombie)
 	has, isZombie, err = graph.HasChannelEdge(
 		lnwire.GossipVersion1, edgeInfo2.ChannelID,
 	)
 	require.NoError(t, err, "unable to query for edge")
-	if has {
-		t.Fatalf("edge2 was not pruned from the graph")
-	}
-	if isZombie {
-		t.Fatal("reorged edge2 should not be marked as zombie")
-	}
+	require.False(t, has)
+	require.False(t, isZombie)
 
 	// Edge 3 should not be removed.
 	has, isZombie, err = graph.HasChannelEdge(
 		lnwire.GossipVersion1, edgeInfo3.ChannelID,
 	)
 	require.NoError(t, err, "unable to query for edge")
-	if !has {
-		t.Fatalf("edge3 was pruned from the graph")
-	}
-	if isZombie {
-		t.Fatal("edge3 was marked as zombie")
-	}
+	require.True(t, has)
+	require.False(t, isZombie)
 
 	// PruneTip should be set to the blockHash we specified for the block
 	// at height 155.
@@ -977,38 +945,17 @@ func TestDisconnectBlockAtHeight(t *testing.T) {
 
 func assertEdgeInfoEqual(t *testing.T, e1 *models.ChannelEdgeInfo,
 	e2 *models.ChannelEdgeInfo) {
-
-	if e1.ChannelID != e2.ChannelID {
-		t.Fatalf("chan id's don't match: %v vs %v", e1.ChannelID,
-			e2.ChannelID)
-	}
-
-	if e1.ChainHash != e2.ChainHash {
-		t.Fatalf("chain hashes don't match: %v vs %v", e1.ChainHash,
-			e2.ChainHash)
-	}
-
-	if !bytes.Equal(e1.NodeKey1Bytes[:], e2.NodeKey1Bytes[:]) {
-		t.Fatalf("nodekey1 doesn't match")
-	}
-	if !bytes.Equal(e1.NodeKey2Bytes[:], e2.NodeKey2Bytes[:]) {
-		t.Fatalf("nodekey2 doesn't match")
-	}
+	require.Equal(t, e2.ChannelID, e1.ChannelID)
+	require.Equal(t, e2.ChainHash, e1.ChainHash)
+	require.Equal(t, e2.NodeKey1Bytes[:], e1.NodeKey1Bytes[:])
+	require.Equal(t, e2.NodeKey2Bytes[:], e1.NodeKey2Bytes[:])
 	btcKey1E1 := e1.BitcoinKey1Bytes.UnwrapOr(route.Vertex{})
 	btcKey1E2 := e2.BitcoinKey1Bytes.UnwrapOr(route.Vertex{})
-	if !bytes.Equal(btcKey1E1[:], btcKey1E2[:]) {
-		t.Fatalf("bitcoinkey1 doesn't match")
-	}
+	require.Equal(t, btcKey1E2[:], btcKey1E1[:])
 	btcKey2E1 := e1.BitcoinKey2Bytes.UnwrapOr(route.Vertex{})
 	btcKey2E2 := e2.BitcoinKey2Bytes.UnwrapOr(route.Vertex{})
-	if !bytes.Equal(btcKey2E1[:], btcKey2E2[:]) {
-		t.Fatalf("bitcoinkey2 doesn't match")
-	}
-
-	if !e1.Features.Equals(e2.Features.RawFeatureVector) {
-		t.Fatalf("features don't match: %v vs %v", e1.Features,
-			e2.Features)
-	}
+	require.Equal(t, btcKey2E2[:], btcKey2E1[:])
+	require.True(t, e1.Features.Equals(e2.Features.RawFeatureVector))
 
 	require.True(t, bytes.Equal(
 		e1.AuthProof.NodeSig1(),
@@ -1027,20 +974,9 @@ func assertEdgeInfoEqual(t *testing.T, e1 *models.ChannelEdgeInfo,
 		e2.AuthProof.BitcoinSig2(),
 	))
 
-	if e1.ChannelPoint != e2.ChannelPoint {
-		t.Fatalf("channel point match: %v vs %v", e1.ChannelPoint,
-			e2.ChannelPoint)
-	}
-
-	if e1.Capacity != e2.Capacity {
-		t.Fatalf("capacity doesn't match: %v vs %v", e1.Capacity,
-			e2.Capacity)
-	}
-
-	if !bytes.Equal(e1.ExtraOpaqueData, e2.ExtraOpaqueData) {
-		t.Fatalf("extra data doesn't match: %v vs %v",
-			e2.ExtraOpaqueData, e2.ExtraOpaqueData)
-	}
+	require.Equal(t, e2.ChannelPoint, e1.ChannelPoint)
+	require.Equal(t, e2.Capacity, e1.Capacity)
+	require.Equal(t, e2.ExtraOpaqueData, e1.ExtraOpaqueData)
 }
 
 func createChannelEdge(node1, node2 *models.Node,
@@ -1210,14 +1146,10 @@ func testEdgeInfoUpdates(t *testing.T, v lnwire.GossipVersion) {
 	// We'd like to test the update of edges inserted into the database, so
 	// we create two vertexes to connect.
 	node1 := createTestVertex(t, v)
-	if err := graph.AddNode(ctx, node1); err != nil {
-		t.Fatalf("unable to add node: %v", err)
-	}
+	require.NoError(t, graph.AddNode(ctx, node1))
 	assertNodeInCache(t, graph.ChannelGraph, node1, testFeatures)
 	node2 := createTestVertex(t, v)
-	if err := graph.AddNode(ctx, node2); err != nil {
-		t.Fatalf("unable to add node: %v", err)
-	}
+	require.NoError(t, graph.AddNode(ctx, node2))
 	assertNodeInCache(t, graph.ChannelGraph, node2, testFeatures)
 
 	// Create an edge and add it to the db.
@@ -1230,9 +1162,7 @@ func testEdgeInfoUpdates(t *testing.T, v lnwire.GossipVersion) {
 	require.Len(t, graph.graphCache.nodeChannels, 0)
 
 	// Add the edge info.
-	if err := graph.AddChannelEdge(ctx, edgeInfo); err != nil {
-		t.Fatalf("unable to create channel edge: %v", err)
-	}
+	require.NoError(t, graph.AddChannelEdge(ctx, edgeInfo))
 	assertEdgeWithNoPoliciesInCache(t, graph.ChannelGraph, edgeInfo)
 
 	chanID := edgeInfo.ChannelID
@@ -1240,15 +1170,11 @@ func testEdgeInfoUpdates(t *testing.T, v lnwire.GossipVersion) {
 
 	// Next, insert both edge policies into the database, they should both
 	// be inserted without any issues.
-	if err := graph.UpdateEdgePolicy(ctx, edge1); err != nil {
-		t.Fatalf("unable to update edge: %v", err)
-	}
+	require.NoError(t, graph.UpdateEdgePolicy(ctx, edge1))
 	assertEdgeWithPolicyInCache(
 		t, graph.ChannelGraph, edgeInfo, edge1, true,
 	)
-	if err := graph.UpdateEdgePolicy(ctx, edge2); err != nil {
-		t.Fatalf("unable to update edge: %v", err)
-	}
+	require.NoError(t, graph.UpdateEdgePolicy(ctx, edge2))
 	assertEdgeWithPolicyInCache(
 		t, graph.ChannelGraph, edgeInfo, edge2, false,
 	)
@@ -1257,32 +1183,21 @@ func testEdgeInfoUpdates(t *testing.T, v lnwire.GossipVersion) {
 	// found.
 	found, isZombie, err := graph.HasChannelEdge(chanID)
 	require.NoError(t, err, "unable to query for edge")
-	if !found {
-		t.Fatalf("graph should have of inserted edge")
-	}
-	if isZombie {
-		t.Fatal("live edge should not be marked as zombie")
-	}
+	require.True(t, found)
+	require.False(t, isZombie)
 
 	// We should also be able to retrieve the channelID only knowing the
 	// channel point of the channel.
 	dbChanID, err := graph.ChannelID(&outpoint)
 	require.NoError(t, err, "unable to retrieve channel ID")
-	if dbChanID != chanID {
-		t.Fatalf("chan ID's mismatch, expected %v got %v", dbChanID,
-			chanID)
-	}
+	require.Equal(t, chanID, dbChanID)
 
 	// With the edges inserted, perform some queries to ensure that they've
 	// been inserted properly.
 	dbEdgeInfo, dbEdge1, dbEdge2, err := graph.FetchChannelEdgesByID(chanID)
 	require.NoError(t, err, "unable to fetch channel by ID")
-	if err := compareEdgePolicies(dbEdge1, edge1); err != nil {
-		t.Fatalf("edge doesn't match: %v", err)
-	}
-	if err := compareEdgePolicies(dbEdge2, edge2); err != nil {
-		t.Fatalf("edge doesn't match: %v", err)
-	}
+	require.NoError(t, compareEdgePolicies(dbEdge1, edge1))
+	require.NoError(t, compareEdgePolicies(dbEdge2, edge2))
 	assertEdgeInfoEqual(t, dbEdgeInfo, edgeInfo)
 
 	// Next, attempt to query the channel edges according to the outpoint
@@ -1291,12 +1206,8 @@ func testEdgeInfoUpdates(t *testing.T, v lnwire.GossipVersion) {
 		&outpoint,
 	)
 	require.NoError(t, err, "unable to fetch channel by ID")
-	if err := compareEdgePolicies(dbEdge1, edge1); err != nil {
-		t.Fatalf("edge doesn't match: %v", err)
-	}
-	if err := compareEdgePolicies(dbEdge2, edge2); err != nil {
-		t.Fatalf("edge doesn't match: %v", err)
-	}
+	require.NoError(t, compareEdgePolicies(dbEdge1, edge1))
+	require.NoError(t, compareEdgePolicies(dbEdge2, edge2))
 	assertEdgeInfoEqual(t, dbEdgeInfo, edgeInfo)
 }
 
@@ -2205,20 +2116,9 @@ func assertPruneTip(t *testing.T, graph *ChannelGraph,
 	blockHash *chainhash.Hash, blockHeight uint32) {
 
 	pruneHash, pruneHeight, err := graph.PruneTip()
-	if err != nil {
-		_, _, line, _ := runtime.Caller(1)
-		t.Fatalf("line %v: unable to fetch prune tip: %v", line, err)
-	}
-	if !bytes.Equal(blockHash[:], pruneHash[:]) {
-		_, _, line, _ := runtime.Caller(1)
-		t.Fatalf("line: %v, prune tips don't match, expected %x got %x",
-			line, blockHash, pruneHash)
-	}
-	if pruneHeight != blockHeight {
-		_, _, line, _ := runtime.Caller(1)
-		t.Fatalf("line %v: prune heights don't match, expected %v "+
-			"got %v", line, blockHeight, pruneHeight)
-	}
+	require.NoError(t, err)
+	require.Equal(t, blockHash[:], pruneHash[:])
+	require.Equal(t, blockHeight, pruneHeight)
 }
 
 func assertNumChans(t *testing.T, graph *ChannelGraph, n int) {
@@ -2247,23 +2147,12 @@ func assertNumNodes(t *testing.T, graph *ChannelGraph, n int) {
 
 			return nil
 		}, func() {})
-	if err != nil {
-		_, _, line, _ := runtime.Caller(1)
-		t.Fatalf("line %v: unable to scan nodes: %v", line, err)
-	}
-
-	if numNodes != n {
-		_, _, line, _ := runtime.Caller(1)
-		t.Fatalf("line %v: expected %v nodes, got %v", line, n,
-			numNodes)
-	}
+	require.NoError(t, err)
+	require.Equal(t, n, numNodes)
 }
 
 func assertChanViewEqual(t *testing.T, a []EdgePoint, b []EdgePoint) {
-	if len(a) != len(b) {
-		_, _, line, _ := runtime.Caller(1)
-		t.Fatalf("line %v: chan views don't match", line)
-	}
+	require.Len(t, b, len(a))
 
 	chanViewSet := make(map[wire.OutPoint]struct{})
 	for _, op := range a {
@@ -2271,21 +2160,15 @@ func assertChanViewEqual(t *testing.T, a []EdgePoint, b []EdgePoint) {
 	}
 
 	for _, op := range b {
-		if _, ok := chanViewSet[op.OutPoint]; !ok {
-			_, _, line, _ := runtime.Caller(1)
-			t.Fatalf("line %v: chanPoint(%v) not found in first "+
-				"view", line, op)
-		}
+		_, ok := chanViewSet[op.OutPoint]
+		require.True(t, ok)
 	}
 }
 
 func assertChanViewEqualChanPoints(t *testing.T, a []EdgePoint,
 	b []*wire.OutPoint) {
 
-	if len(a) != len(b) {
-		_, _, line, _ := runtime.Caller(1)
-		t.Fatalf("line %v: chan views don't match", line)
-	}
+	require.Len(t, b, len(a))
 
 	chanViewSet := make(map[wire.OutPoint]struct{})
 	for _, op := range a {
@@ -2293,11 +2176,8 @@ func assertChanViewEqualChanPoints(t *testing.T, a []EdgePoint,
 	}
 
 	for _, op := range b {
-		if _, ok := chanViewSet[*op]; !ok {
-			_, _, line, _ := runtime.Caller(1)
-			t.Fatalf("line %v: chanPoint(%v) not found in first "+
-				"view", line, op)
-		}
+		_, ok := chanViewSet[*op]
+		require.True(t, ok)
 	}
 }
 
@@ -2308,9 +2188,7 @@ func TestGraphPruning(t *testing.T) {
 	graph := MakeTestGraph(t)
 
 	sourceNode := createTestVertex(t, lnwire.GossipVersion1)
-	if err := graph.SetSourceNode(ctx, sourceNode); err != nil {
-		t.Fatalf("unable to set source node: %v", err)
-	}
+	require.NoError(t, graph.SetSourceNode(ctx, sourceNode))
 
 	// As initial set up for the test, we'll create a graph with 5 vertexes
 	// and enough edges to create a fully connected graph. The graph will
@@ -2319,10 +2197,7 @@ func TestGraphPruning(t *testing.T) {
 	graphNodes := make([]*models.Node, numNodes)
 	for i := 0; i < numNodes; i++ {
 		node := createTestVertex(t, lnwire.GossipVersion1)
-
-		if err := graph.AddNode(ctx, node); err != nil {
-			t.Fatalf("unable to add node: %v", err)
-		}
+		require.NoError(t, graph.AddNode(ctx, node))
 
 		graphNodes[i] = node
 	}
@@ -2362,12 +2237,8 @@ func TestGraphPruning(t *testing.T) {
 			models.WithChannelPoint(op),
 			models.WithCapacity(1000),
 		)
-		if err != nil {
-			t.Fatalf("unable to create edge: %v", err)
-		}
-		if err := graph.AddChannelEdge(ctx, edgeInfo); err != nil {
-			t.Fatalf("unable to add node: %v", err)
-		}
+		require.NoError(t, err)
+		require.NoError(t, graph.AddChannelEdge(ctx, edgeInfo))
 
 		pkScript, err := edgeInfo.FundingPKScript()
 		require.NoError(t, err)
@@ -2383,9 +2254,7 @@ func TestGraphPruning(t *testing.T) {
 		edge.ChannelFlags = 0
 		edge.ToNode = graphNodes[i].PubKeyBytes
 		edge.SigBytes = testSig.Serialize()
-		if err := graph.UpdateEdgePolicy(ctx, edge); err != nil {
-			t.Fatalf("unable to update edge: %v", err)
-		}
+		require.NoError(t, graph.UpdateEdgePolicy(ctx, edge))
 
 		// Create another random edge that points from node_i+1 ->
 		// node_i this time.
@@ -2393,9 +2262,7 @@ func TestGraphPruning(t *testing.T) {
 		edge.ChannelFlags = 1
 		edge.ToNode = graphNodes[i].PubKeyBytes
 		edge.SigBytes = testSig.Serialize()
-		if err := graph.UpdateEdgePolicy(ctx, edge); err != nil {
-			t.Fatalf("unable to update edge: %v", err)
-		}
+		require.NoError(t, graph.UpdateEdgePolicy(ctx, edge))
 	}
 
 	// With all the channel points added, we'll consult the graph to ensure
@@ -2415,10 +2282,7 @@ func TestGraphPruning(t *testing.T) {
 	block := channelPoints[:2]
 	prunedChans, err := graph.PruneGraph(block, &blockHash, blockHeight)
 	require.NoError(t, err, "unable to prune graph")
-	if len(prunedChans) != 2 {
-		t.Fatalf("incorrect number of channels pruned: "+
-			"expected %v, got %v", 2, prunedChans)
-	}
+	require.Len(t, prunedChans, 2)
 
 	// Now ensure that the prune tip has been updated.
 	assertPruneTip(t, graph, &blockHash, blockHeight)
@@ -2447,9 +2311,7 @@ func TestGraphPruning(t *testing.T) {
 	require.NoError(t, err, "unable to prune graph")
 
 	// No channels should have been detected as pruned.
-	if len(prunedChans) != 0 {
-		t.Fatalf("channels were pruned but shouldn't have been")
-	}
+	require.Empty(t, prunedChans)
 
 	// Once again, the prune tip should have been updated. We should still
 	// see both channels and their participants, along with the source node.
@@ -2468,10 +2330,7 @@ func TestGraphPruning(t *testing.T) {
 
 	// The remainder of the channels should have been pruned from the
 	// graph.
-	if len(prunedChans) != 2 {
-		t.Fatalf("incorrect number of channels pruned: "+
-			"expected %v, got %v", 2, len(prunedChans))
-	}
+	require.Len(t, prunedChans, 2)
 
 	// The prune tip should be updated, no channels should be found, and
 	// only the source node should remain within the current graph.
@@ -2484,10 +2343,7 @@ func TestGraphPruning(t *testing.T) {
 	// channel view.
 	channelView, err = graph.ChannelView()
 	require.NoError(t, err, "unable to get graph channel view")
-	if len(channelView) != 0 {
-		t.Fatalf("channel view should be empty, instead have: %v",
-			channelView)
-	}
+	require.Empty(t, channelView)
 }
 
 // TestHighestChanID tests that we're able to properly retrieve the highest
@@ -2502,9 +2358,7 @@ func testHighestChanID(t *testing.T, v lnwire.GossipVersion) {
 	// get a channel ID of zero if we ask for the highest channel ID.
 	bestID, err := graph.HighestChanID(ctx)
 	require.NoError(t, err, "unable to get highest ID")
-	if bestID != 0 {
-		require.Equal(t, uint64(0), bestID)
-	}
+	require.Zero(t, bestID)
 
 	// Next, we'll insert two channels into the database, with each channel
 	// connecting the same two nodes.
@@ -2523,10 +2377,7 @@ func testHighestChanID(t *testing.T, v lnwire.GossipVersion) {
 	// known channel ID in the database.
 	bestID, err = graph.HighestChanID(ctx)
 	require.NoError(t, err, "unable to get highest ID")
-
-	if bestID != chanID2.ToUint64() {
-		require.Equal(t, chanID2.ToUint64(), bestID)
-	}
+	require.Equal(t, chanID2.ToUint64(), bestID)
 
 	// If we add another edge, then the current best chan ID should be
 	// updated as well.
@@ -2555,21 +2406,13 @@ func TestChanUpdatesInHorizon(t *testing.T) {
 
 	chanUpdates, err := fn.CollectErr(chanIter)
 	require.NoError(t, err, "unable to updates for updates")
-
-	if len(chanUpdates) != 0 {
-		t.Fatalf("expected 0 chan updates, instead got %v",
-			len(chanUpdates))
-	}
+	require.Empty(t, chanUpdates)
 
 	// We'll start by creating two nodes which will seed our test graph.
 	node1 := createTestVertex(t, lnwire.GossipVersion1)
-	if err := graph.AddNode(ctx, node1); err != nil {
-		t.Fatalf("unable to add node: %v", err)
-	}
+	require.NoError(t, graph.AddNode(ctx, node1))
 	node2 := createTestVertex(t, lnwire.GossipVersion1)
-	if err := graph.AddNode(ctx, node2); err != nil {
-		t.Fatalf("unable to add node: %v", err)
-	}
+	require.NoError(t, graph.AddNode(ctx, node2))
 
 	// We'll now create 10 channels between the two nodes, with update
 	// times 10 seconds after each other.
@@ -2582,10 +2425,7 @@ func TestChanUpdatesInHorizon(t *testing.T) {
 			lnwire.GossipVersion1, uint32(i*10), 0, 0, 0,
 			node1, node2,
 		)
-
-		if err := graph.AddChannelEdge(ctx, channel); err != nil {
-			t.Fatalf("unable to create channel edge: %v", err)
-		}
+		require.NoError(t, graph.AddChannelEdge(ctx, channel))
 
 		edge1UpdateTime := endTime
 		edge2UpdateTime := edge1UpdateTime.Add(time.Second)
@@ -2598,9 +2438,7 @@ func TestChanUpdatesInHorizon(t *testing.T) {
 		edge1.ChannelFlags = 0
 		edge1.ToNode = node2.PubKeyBytes
 		edge1.SigBytes = testSig.Serialize()
-		if err := graph.UpdateEdgePolicy(ctx, edge1); err != nil {
-			t.Fatalf("unable to update edge: %v", err)
-		}
+		require.NoError(t, graph.UpdateEdgePolicy(ctx, edge1))
 
 		edge2 := newEdgePolicy(
 			lnwire.GossipVersion1, chanID.ToUint64(),
@@ -2609,9 +2447,7 @@ func TestChanUpdatesInHorizon(t *testing.T) {
 		edge2.ChannelFlags = 1
 		edge2.ToNode = node1.PubKeyBytes
 		edge2.SigBytes = testSig.Serialize()
-		if err := graph.UpdateEdgePolicy(ctx, edge2); err != nil {
-			t.Fatalf("unable to update edge: %v", err)
-		}
+		require.NoError(t, graph.UpdateEdgePolicy(ctx, edge2))
 
 		edges = append(edges, ChannelEdge{
 			Info:    channel,
@@ -2676,15 +2512,8 @@ func TestChanUpdatesInHorizon(t *testing.T) {
 		)
 
 		resp, err := fn.CollectErr(respIter)
-		if err != nil {
-			t.Fatalf("unable to query for updates: %v", err)
-		}
-
-		if len(resp) != len(queryCase.resp) {
-			t.Fatalf("expected %v chans, got %v chans",
-				len(queryCase.resp), len(resp))
-
-		}
+		require.NoError(t, err)
+		require.Len(t, resp, len(queryCase.resp))
 
 		for i := 0; i < len(resp); i++ {
 			chanExp := queryCase.resp[i]
@@ -3208,13 +3037,9 @@ func TestFilterKnownChanIDs(t *testing.T) {
 
 	// We'll start by creating two nodes which will seed our test graph.
 	node1 := createTestVertex(t, lnwire.GossipVersion1)
-	if err := graph.AddNode(ctx, node1); err != nil {
-		t.Fatalf("unable to add node: %v", err)
-	}
+	require.NoError(t, graph.AddNode(ctx, node1))
 	node2 := createTestVertex(t, lnwire.GossipVersion1)
-	if err := graph.AddNode(ctx, node2); err != nil {
-		t.Fatalf("unable to add node: %v", err)
-	}
+	require.NoError(t, graph.AddNode(ctx, node2))
 
 	// Next, we'll add 5 channel ID's to the graph, each of them having a
 	// block height 10 blocks after the previous.
@@ -3225,10 +3050,7 @@ func TestFilterKnownChanIDs(t *testing.T) {
 			lnwire.GossipVersion1, uint32(i*10), 0, 0, 0,
 			node1, node2,
 		)
-
-		if err := graph.AddChannelEdge(ctx, channel); err != nil {
-			t.Fatalf("unable to create channel edge: %v", err)
-		}
+		require.NoError(t, graph.AddChannelEdge(ctx, channel))
 
 		chanIDs = append(chanIDs, NewChannelUpdateInfo(
 			chanID, time.Time{}, time.Time{},
@@ -3242,13 +3064,9 @@ func TestFilterKnownChanIDs(t *testing.T) {
 			lnwire.GossipVersion1, uint32(i*10+1), 0, 0, 0,
 			node1, node2,
 		)
-		if err := graph.AddChannelEdge(ctx, channel); err != nil {
-			t.Fatalf("unable to create channel edge: %v", err)
-		}
+		require.NoError(t, graph.AddChannelEdge(ctx, channel))
 		err := graph.DeleteChannelEdges(false, true, channel.ChannelID)
-		if err != nil {
-			t.Fatalf("unable to mark edge zombie: %v", err)
-		}
+		require.NoError(t, err)
 
 		zombieIDs = append(
 			zombieIDs, ChannelUpdateInfo{ShortChannelID: chanID},
@@ -3952,20 +3770,13 @@ func testFetchChanInfos(t *testing.T, v lnwire.GossipVersion) {
 	// edges back.
 	resp, err := graph.FetchChanInfos(edgeQuery)
 	require.NoError(t, err, "unable to fetch chan edges")
-	if len(resp) != len(edges) {
-		t.Fatalf("expected %v edges, instead got %v", len(edges),
-			len(resp))
-	}
+	require.Len(t, resp, len(edges))
 
 	for i := 0; i < len(resp); i++ {
 		err := compareEdgePolicies(resp[i].Policy1, edges[i].Policy1)
-		if err != nil {
-			t.Fatalf("edge doesn't match: %v", err)
-		}
+		require.NoError(t, err)
 		err = compareEdgePolicies(resp[i].Policy2, edges[i].Policy2)
-		if err != nil {
-			t.Fatalf("edge doesn't match: %v", err)
-		}
+		require.NoError(t, err)
 		assertEdgeInfoEqual(t, resp[i].Info, edges[i].Info)
 	}
 }
@@ -4060,46 +3871,34 @@ func TestChannelEdgePruningUpdateIndexDeletion(t *testing.T) {
 	}
 
 	sourceNode := createTestVertex(t, lnwire.GossipVersion1)
-	if err := graph.SetSourceNode(ctx, sourceNode); err != nil {
-		t.Fatalf("unable to set source node: %v", err)
-	}
+	require.NoError(t, graph.SetSourceNode(ctx, sourceNode))
 
 	// We'll first populate our graph with two nodes. All channels created
 	// below will be made between these two nodes.
 	node1 := createTestVertex(t, lnwire.GossipVersion1)
-	if err := graph.AddNode(ctx, node1); err != nil {
-		t.Fatalf("unable to add node: %v", err)
-	}
+	require.NoError(t, graph.AddNode(ctx, node1))
 	node2 := createTestVertex(t, lnwire.GossipVersion1)
-	if err := graph.AddNode(ctx, node2); err != nil {
-		t.Fatalf("unable to add node: %v", err)
-	}
+	require.NoError(t, graph.AddNode(ctx, node2))
 
 	// With the two nodes created, we'll now create a random channel, as
 	// well as two edges in the database with distinct update times.
 	edgeInfo, chanID := createEdge(
 		lnwire.GossipVersion1, 100, 0, 0, 0, node1, node2,
 	)
-	if err := graph.AddChannelEdge(ctx, edgeInfo); err != nil {
-		t.Fatalf("unable to add edge: %v", err)
-	}
+	require.NoError(t, graph.AddChannelEdge(ctx, edgeInfo))
 
 	edge1 := randEdgePolicy(chanID.ToUint64())
 	edge1.ChannelFlags = 0
 	edge1.ToNode = node1.PubKeyBytes
 	edge1.SigBytes = testSig.Serialize()
-	if err := graph.UpdateEdgePolicy(ctx, edge1); err != nil {
-		t.Fatalf("unable to update edge: %v", err)
-	}
+	require.NoError(t, graph.UpdateEdgePolicy(ctx, edge1))
 	edge1 = copyEdgePolicy(edge1) // Avoid read/write race conditions.
 
 	edge2 := randEdgePolicy(chanID.ToUint64())
 	edge2.ChannelFlags = 1
 	edge2.ToNode = node2.PubKeyBytes
 	edge2.SigBytes = testSig.Serialize()
-	if err := graph.UpdateEdgePolicy(ctx, edge2); err != nil {
-		t.Fatalf("unable to update edge: %v", err)
-	}
+	require.NoError(t, graph.UpdateEdgePolicy(ctx, edge2))
 	edge2 = copyEdgePolicy(edge2) // Avoid read/write race conditions.
 
 	// checkIndexTimestamps is a helper function that checks the edge update
@@ -4148,9 +3947,7 @@ func TestChannelEdgePruningUpdateIndexDeletion(t *testing.T) {
 				return nil
 			})
 		}, func() {})
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 	}
 
 	// With both edges policies added, we'll make sure to check they exist
@@ -4164,14 +3961,10 @@ func TestChannelEdgePruningUpdateIndexDeletion(t *testing.T) {
 	// removed from the update index.
 	edge1.ChannelFlags = 2
 	edge1.LastUpdate = time.Now()
-	if err := graph.UpdateEdgePolicy(ctx, edge1); err != nil {
-		t.Fatalf("unable to update edge: %v", err)
-	}
+	require.NoError(t, graph.UpdateEdgePolicy(ctx, edge1))
 	edge2.ChannelFlags = 3
 	edge2.LastUpdate = edge1.LastUpdate.Add(time.Hour)
-	if err := graph.UpdateEdgePolicy(ctx, edge2); err != nil {
-		t.Fatalf("unable to update edge: %v", err)
-	}
+	require.NoError(t, graph.UpdateEdgePolicy(ctx, edge2))
 
 	// With the policies updated, we should now be able to find their
 	// updated entries within the update index.
@@ -4206,34 +3999,24 @@ func TestPruneGraphNodes(t *testing.T) {
 	// We'll start off by inserting our source node, to ensure that it's
 	// the only node left after we prune the graph.
 	sourceNode := createTestVertex(t, lnwire.GossipVersion1)
-	if err := graph.SetSourceNode(ctx, sourceNode); err != nil {
-		t.Fatalf("unable to set source node: %v", err)
-	}
+	require.NoError(t, graph.SetSourceNode(ctx, sourceNode))
 
 	// With the source node inserted, we'll now add three nodes to the
 	// channel graph, at the end of the scenario, only two of these nodes
 	// should still be in the graph.
 	node1 := createTestVertex(t, lnwire.GossipVersion1)
-	if err := graph.AddNode(ctx, node1); err != nil {
-		t.Fatalf("unable to add node: %v", err)
-	}
+	require.NoError(t, graph.AddNode(ctx, node1))
 	node2 := createTestVertex(t, lnwire.GossipVersion1)
-	if err := graph.AddNode(ctx, node2); err != nil {
-		t.Fatalf("unable to add node: %v", err)
-	}
+	require.NoError(t, graph.AddNode(ctx, node2))
 	node3 := createTestVertex(t, lnwire.GossipVersion1)
-	if err := graph.AddNode(ctx, node3); err != nil {
-		t.Fatalf("unable to add node: %v", err)
-	}
+	require.NoError(t, graph.AddNode(ctx, node3))
 
 	// We'll now add a new edge to the graph, but only actually advertise
 	// the edge of *one* of the nodes.
 	edgeInfo, chanID := createEdge(
 		lnwire.GossipVersion1, 100, 0, 0, 0, node1, node2,
 	)
-	if err := graph.AddChannelEdge(ctx, edgeInfo); err != nil {
-		t.Fatalf("unable to add edge: %v", err)
-	}
+	require.NoError(t, graph.AddChannelEdge(ctx, edgeInfo))
 
 	// We'll now insert an advertised edge, but it'll only be the edge that
 	// points from the first to the second node.
@@ -4241,14 +4024,10 @@ func TestPruneGraphNodes(t *testing.T) {
 	edge1.ChannelFlags = 0
 	edge1.ToNode = node1.PubKeyBytes
 	edge1.SigBytes = testSig.Serialize()
-	if err := graph.UpdateEdgePolicy(ctx, edge1); err != nil {
-		t.Fatalf("unable to update edge: %v", err)
-	}
+	require.NoError(t, graph.UpdateEdgePolicy(ctx, edge1))
 
 	// We'll now initiate a around of graph pruning.
-	if err := graph.PruneGraphNodes(); err != nil {
-		t.Fatalf("unable to prune graph nodes: %v", err)
-	}
+	require.NoError(t, graph.PruneGraphNodes())
 
 	// At this point, there should be 3 nodes left in the graph still: the
 	// source node (which can't be pruned), and node 1+2. Nodes 1 and two
@@ -4315,9 +4094,7 @@ func TestNodePruningUpdateIndexDeletion(t *testing.T) {
 	// We'll first populate our graph with a single node that will be
 	// removed shortly.
 	node1 := createTestVertex(t, lnwire.GossipVersion1)
-	if err := graph.AddNode(ctx, node1); err != nil {
-		t.Fatalf("unable to add node: %v", err)
-	}
+	require.NoError(t, graph.AddNode(ctx, node1))
 
 	// We'll confirm that we can retrieve the node using
 	// NodeUpdatesInHorizon, using a time that's slightly beyond the last
@@ -4330,10 +4107,7 @@ func TestNodePruningUpdateIndexDeletion(t *testing.T) {
 	// match the node we just inserted.
 	nodesInHorizon, err := fn.CollectErr(nodesInHorizonIter)
 	require.NoError(t, err, "unable to fetch nodes in horizon")
-	if len(nodesInHorizon) != 1 {
-		t.Fatalf("should have 1 nodes instead have: %v",
-			len(nodesInHorizon))
-	}
+	require.Len(t, nodesInHorizon, 1)
 	compareNodes(t, node1, nodesInHorizon[0])
 
 	// We'll now delete the node from the graph, this should result in it
@@ -4346,11 +4120,7 @@ func TestNodePruningUpdateIndexDeletion(t *testing.T) {
 	nodesInHorizonIter = graph.NodeUpdatesInHorizon(startTime, endTime)
 	nodesInHorizon, err = fn.CollectErr(nodesInHorizonIter)
 	require.NoError(t, err, "unable to fetch nodes in horizon")
-
-	if len(nodesInHorizon) != 0 {
-		t.Fatalf("should have zero nodes instead have: %v",
-			len(nodesInHorizon))
-	}
+	require.Empty(t, nodesInHorizon)
 }
 
 var (
@@ -4581,15 +4351,11 @@ func testDisabledChannelIDs(t *testing.T, v lnwire.GossipVersion) {
 
 	// Create first node and add it to the graph.
 	node1 := createTestVertex(t, v)
-	if err := graph.AddNode(ctx, node1); err != nil {
-		t.Fatalf("unable to add node: %v", err)
-	}
+	require.NoError(t, graph.AddNode(ctx, node1))
 
 	// Create second node and add it to the graph.
 	node2 := createTestVertex(t, v)
-	if err := graph.AddNode(ctx, node2); err != nil {
-		t.Fatalf("unable to add node: %v", err)
-	}
+	require.NoError(t, graph.AddNode(ctx, node2))
 
 	// Adding a new channel edge to the graph.
 	edgeInfo, edge1, edge2 := createChannelEdge(node1, node2, v)
@@ -4599,21 +4365,13 @@ func testDisabledChannelIDs(t *testing.T, v lnwire.GossipVersion) {
 	case lnwire.GossipVersion2:
 		node2.LastBlockHeight = nextBlockHeight()
 	}
-	if err := graph.AddNode(ctx, node2); err != nil {
-		t.Fatalf("unable to add node: %v", err)
-	}
-
-	if err := graph.AddChannelEdge(ctx, edgeInfo); err != nil {
-		t.Fatalf("unable to create channel edge: %v", err)
-	}
+	require.NoError(t, graph.AddNode(ctx, node2))
+	require.NoError(t, graph.AddChannelEdge(ctx, edgeInfo))
 
 	// Ensure no disabled channels exist in the bucket on start.
 	disabledChanIds, err := graph.DisabledChannelIDs()
 	require.NoError(t, err, "unable to get disabled channel ids")
-	if len(disabledChanIds) > 0 {
-		t.Fatalf("expected empty disabled channels, got %v disabled "+
-			"channels", len(disabledChanIds))
-	}
+	require.Empty(t, disabledChanIds)
 
 	// Add one disabled policy and ensure the channel is still not in the
 	// disabled list.
@@ -4623,15 +4381,10 @@ func testDisabledChannelIDs(t *testing.T, v lnwire.GossipVersion) {
 	case lnwire.GossipVersion2:
 		edge1.DisableFlags |= lnwire.ChanUpdateDisableIncoming
 	}
-	if err := graph.UpdateEdgePolicy(ctx, edge1); err != nil {
-		t.Fatalf("unable to update edge: %v", err)
-	}
+	require.NoError(t, graph.UpdateEdgePolicy(ctx, edge1))
 	disabledChanIds, err = graph.DisabledChannelIDs()
 	require.NoError(t, err, "unable to get disabled channel ids")
-	if len(disabledChanIds) > 0 {
-		t.Fatalf("expected empty disabled channels, got %v disabled "+
-			"channels", len(disabledChanIds))
-	}
+	require.Empty(t, disabledChanIds)
 
 	// Add second disabled policy and ensure the channel is now in the
 	// disabled list.
@@ -4641,31 +4394,19 @@ func testDisabledChannelIDs(t *testing.T, v lnwire.GossipVersion) {
 	case lnwire.GossipVersion2:
 		edge2.DisableFlags |= lnwire.ChanUpdateDisableIncoming
 	}
-	if err := graph.UpdateEdgePolicy(ctx, edge2); err != nil {
-		t.Fatalf("unable to update edge: %v", err)
-	}
+	require.NoError(t, graph.UpdateEdgePolicy(ctx, edge2))
 	disabledChanIds, err = graph.DisabledChannelIDs()
 	require.NoError(t, err, "unable to get disabled channel ids")
-	if len(disabledChanIds) != 1 ||
-		disabledChanIds[0] != edgeInfo.ChannelID {
-
-		t.Fatalf("expected disabled channel with id %v, "+
-			"got %v", edgeInfo.ChannelID, disabledChanIds)
-	}
+	require.Equal(t, []uint64{edgeInfo.ChannelID}, disabledChanIds)
 
 	// Delete the channel edge and ensure it is removed from the disabled
 	// list.
-	if err = graph.DeleteChannelEdges(
+	require.NoError(t, graph.DeleteChannelEdges(
 		false, true, edgeInfo.ChannelID,
-	); err != nil {
-		t.Fatalf("unable to delete channel edge: %v", err)
-	}
+	))
 	disabledChanIds, err = graph.DisabledChannelIDs()
 	require.NoError(t, err, "unable to get disabled channel ids")
-	if len(disabledChanIds) > 0 {
-		t.Fatalf("expected empty disabled channels, got %v disabled "+
-			"channels", len(disabledChanIds))
-	}
+	require.Empty(t, disabledChanIds)
 }
 
 // TestEdgePolicyMissingMaxHTLC tests that if we find a ChannelEdgePolicy in
@@ -4688,20 +4429,14 @@ func TestEdgePolicyMissingMaxHTLC(t *testing.T) {
 	// We'd like to test the update of edges inserted into the database, so
 	// we create two vertexes to connect.
 	node1 := createTestVertex(t, lnwire.GossipVersion1)
-	if err := graph.AddNode(ctx, node1); err != nil {
-		t.Fatalf("unable to add node: %v", err)
-	}
+	require.NoError(t, graph.AddNode(ctx, node1))
 	node2 := createTestVertex(t, lnwire.GossipVersion1)
 
 	edgeInfo, edge1, edge2 := createChannelEdge(
 		node1, node2, lnwire.GossipVersion1,
 	)
-	if err := graph.AddNode(ctx, node2); err != nil {
-		t.Fatalf("unable to add node: %v", err)
-	}
-	if err := graph.AddChannelEdge(ctx, edgeInfo); err != nil {
-		t.Fatalf("unable to create channel edge: %v", err)
-	}
+	require.NoError(t, graph.AddNode(ctx, node2))
+	require.NoError(t, graph.AddChannelEdge(ctx, edgeInfo))
 
 	chanID := edgeInfo.ChannelID
 	from := edge2.ToNode[:]
@@ -4746,28 +4481,18 @@ func TestEdgePolicyMissingMaxHTLC(t *testing.T) {
 	require.NoError(t, err, "unable to fetch channel by ID")
 
 	// The first edge should have a nil-policy returned
-	if dbEdge1 != nil {
-		t.Fatalf("expected db edge to be nil")
-	}
-	if err := compareEdgePolicies(dbEdge2, edge2); err != nil {
-		t.Fatalf("edge doesn't match: %v", err)
-	}
+	require.Nil(t, dbEdge1)
+	require.NoError(t, compareEdgePolicies(dbEdge2, edge2))
 	assertEdgeInfoEqual(t, dbEdgeInfo, edgeInfo)
 
 	// Now add the original, unmodified edge policy, and make sure the edge
 	// policies then become fully populated.
-	if err := graph.UpdateEdgePolicy(ctx, edge1); err != nil {
-		t.Fatalf("unable to update edge: %v", err)
-	}
+	require.NoError(t, graph.UpdateEdgePolicy(ctx, edge1))
 
 	dbEdgeInfo, dbEdge1, dbEdge2, err = graph.FetchChannelEdgesByID(chanID)
 	require.NoError(t, err, "unable to fetch channel by ID")
-	if err := compareEdgePolicies(dbEdge1, edge1); err != nil {
-		t.Fatalf("edge doesn't match: %v", err)
-	}
-	if err := compareEdgePolicies(dbEdge2, edge2); err != nil {
-		t.Fatalf("edge doesn't match: %v", err)
-	}
+	require.NoError(t, compareEdgePolicies(dbEdge1, edge1))
+	require.NoError(t, compareEdgePolicies(dbEdge2, edge2))
 	assertEdgeInfoEqual(t, dbEdgeInfo, edgeInfo)
 }
 
@@ -4810,11 +4535,7 @@ func assertNumZombies(t *testing.T, graph *ChannelGraph, expZombies uint64) {
 
 	numZombies, err := graph.NumZombies()
 	require.NoError(t, err, "unable to query number of zombies")
-
-	if numZombies != expZombies {
-		t.Fatalf("expected %d zombies, found %d",
-			expZombies, numZombies)
-	}
+	require.Equal(t, expZombies, numZombies)
 }
 
 // TestGraphZombieIndex ensures that we can mark edges correctly as zombie/live.
@@ -4954,9 +4675,8 @@ func TestLightningNodeSigVerification(t *testing.T) {
 
 	// Create some dummy data to sign.
 	var data [32]byte
-	if _, err := prand.Read(data[:]); err != nil {
-		t.Fatalf("unable to read prand: %v", err)
-	}
+	_, err := prand.Read(data[:])
+	require.NoError(t, err)
 
 	// Create private key and sign the data with it.
 	priv, err := btcec.NewPrivateKey()
@@ -4965,9 +4685,7 @@ func TestLightningNodeSigVerification(t *testing.T) {
 	sign := ecdsa.Sign(priv, data[:])
 
 	// Sanity check that the signature checks out.
-	if !sign.Verify(data[:], priv.PubKey()) {
-		t.Fatalf("signature doesn't check out")
-	}
+	require.True(t, sign.Verify(data[:], priv.PubKey()))
 
 	// Create a Node from the same private key.
 	node := createNode(t, lnwire.GossipVersion1, priv)
@@ -4976,10 +4694,7 @@ func TestLightningNodeSigVerification(t *testing.T) {
 	// pubkey returned from the lightning node.
 	nodePub, err := node.PubKey()
 	require.NoError(t, err, "unable to get pubkey")
-
-	if !sign.Verify(data[:], nodePub) {
-		t.Fatalf("unable to verify sig")
-	}
+	require.True(t, sign.Verify(data[:], nodePub))
 }
 
 // TestComputeFee tests fee calculation based on the outgoing amt.
@@ -4995,9 +4710,7 @@ func TestComputeFee(t *testing.T) {
 	)
 
 	fee := policy.ComputeFee(outgoingAmt)
-	if fee != expectedFee {
-		t.Fatalf("expected fee %v, got %v", expectedFee, fee)
-	}
+	require.Equal(t, expectedFee, fee)
 }
 
 // TestBatchedAddChannelEdge asserts that BatchedAddChannelEdge properly

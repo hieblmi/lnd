@@ -1,13 +1,13 @@
 package graphdb
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/lightningnetwork/lnd/graph/db/models"
 	"github.com/lightningnetwork/lnd/lnwire"
 	"github.com/lightningnetwork/lnd/routing/route"
+	"github.com/stretchr/testify/require"
 )
 
 // TestChannelCache checks the behavior of the channelCache with respect to
@@ -23,9 +23,7 @@ func TestChannelCache(t *testing.T) {
 	// As a sanity check, assert that querying the empty cache does not
 	// return an entry.
 	_, ok := c.get(v, 0)
-	if ok {
-		t.Fatalf("channel cache should be empty")
-	}
+	require.False(t, ok)
 
 	// Now, fill up the cache entirely.
 	for i := uint64(0); i < cacheSize; i++ {
@@ -55,9 +53,7 @@ func TestChannelCache(t *testing.T) {
 
 	// Assert that exactly one element has been evicted.
 	numEvicted := len(evicted)
-	if numEvicted != 1 {
-		t.Fatalf("expected one evicted entry, got: %d", numEvicted)
-	}
+	require.Equal(t, 1, numEvicted)
 
 	// Remove the highest item which initially caused the eviction and
 	// reinsert the element that was evicted prior.
@@ -92,15 +88,10 @@ func assertHasChanEntries(t *testing.T, c *channelCache,
 
 	for i := start; i < end; i++ {
 		entry, ok := c.get(v, i)
-		if !ok {
-			t.Fatalf("channel cache should contain chan %d", i)
-		}
+		require.True(t, ok)
 
 		expEntry := channelForInt(i)
-		if !reflect.DeepEqual(entry, expEntry) {
-			t.Fatalf("entry mismatch, want: %v, got: %v",
-				expEntry, entry)
-		}
+		require.Equal(t, expEntry, entry)
 	}
 }
 
