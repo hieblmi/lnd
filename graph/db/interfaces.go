@@ -288,7 +288,7 @@ type Store interface { //nolint:interfacebloat
 	// edges that exist at the time of the query. This can be used to
 	// respond to peer queries that are seeking to fill in gaps in their
 	// view of the channel graph.
-	FetchChanInfos(v lnwire.GossipVersion,
+	FetchChanInfos(ctx context.Context, v lnwire.GossipVersion,
 		chanIDs []uint64) ([]ChannelEdge, error)
 
 	// FetchChannelEdgesByOutpoint attempts to lookup the two directed edges

@@ -3785,7 +3785,7 @@ func testFetchChanInfos(t *testing.T, v lnwire.GossipVersion) {
 	// We'll now attempt to query for the range of channel ID's we just
 	// inserted into the database. We should get the exact same set of
 	// edges back.
-	resp, err := graph.FetchChanInfos(edgeQuery)
+	resp, err := graph.FetchChanInfos(ctx, edgeQuery)
 	require.NoError(t, err, "unable to fetch chan edges")
 	require.Len(t, resp, len(edges))
 

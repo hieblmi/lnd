@@ -2580,11 +2580,10 @@ func (s *SQLStore) IsPublicNode(ctx context.Context, v lnwire.GossipVersion,
 // fill in gaps in their view of the channel graph.
 //
 // NOTE: part of the Store interface.
-func (s *SQLStore) FetchChanInfos(v lnwire.GossipVersion,
-	chanIDs []uint64) ([]ChannelEdge, error) {
+func (s *SQLStore) FetchChanInfos(ctx context.Context,
+	v lnwire.GossipVersion, chanIDs []uint64) ([]ChannelEdge, error) {
 
 	var (
-		ctx   = context.TODO()
 		edges = make(map[uint64]ChannelEdge)
 	)
 	err := s.db.ExecTx(ctx, sqldb.ReadTxOpt(), func(db SQLQueries) error {

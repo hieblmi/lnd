@@ -353,7 +353,7 @@ func (c *ChannelGraph) MarkEdgeLive(ctx context.Context, chanID uint64) error {
 		// We need to add the channel back into our graph cache,
 		// otherwise we won't use it for path finding.
 		infos, err := c.db.FetchChanInfos(
-			lnwire.GossipVersion1, []uint64{chanID},
+			ctx, lnwire.GossipVersion1, []uint64{chanID},
 		)
 		if err != nil {
 			return err
@@ -723,10 +723,10 @@ func (c *ChannelGraph) FilterChannelRange(ctx context.Context,
 }
 
 // FetchChanInfos returns the set of channel edges for the passed channel IDs.
-func (c *ChannelGraph) FetchChanInfos(v lnwire.GossipVersion,
-	chanIDs []uint64) ([]ChannelEdge, error) {
+func (c *ChannelGraph) FetchChanInfos(ctx context.Context,
+	v lnwire.GossipVersion, chanIDs []uint64) ([]ChannelEdge, error) {
 
-	return c.db.FetchChanInfos(v, chanIDs)
+	return c.db.FetchChanInfos(ctx, v, chanIDs)
 }
 
 // FetchChannelEdgesByOutpoint attempts to lookup directed edges by funding
@@ -976,10 +976,10 @@ func (c *VersionedGraph) DisabledChannelIDs(
 }
 
 // FetchChanInfos returns the set of channel edges for the passed channel IDs.
-func (c *VersionedGraph) FetchChanInfos(chanIDs []uint64) ([]ChannelEdge,
-	error) {
+func (c *VersionedGraph) FetchChanInfos(ctx context.Context,
+	chanIDs []uint64) ([]ChannelEdge, error) {
 
-	return c.db.FetchChanInfos(c.v, chanIDs)
+	return c.db.FetchChanInfos(ctx, c.v, chanIDs)
 }
 
 // HighestChanID returns the "highest" known channel ID in the channel graph.
