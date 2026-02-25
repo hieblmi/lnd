@@ -253,14 +253,14 @@ func (c *ChannelGraph) FetchNodeFeatures(ctx context.Context,
 // instance which can be used to perform queries against the channel graph. If
 // the graph cache is not enabled, then the call-back will be provided with
 // access to the graph via a consistent read-only transaction.
-func (c *ChannelGraph) GraphSession(cb func(graph NodeTraverser) error,
-	reset func()) error {
+func (c *ChannelGraph) GraphSession(ctx context.Context,
+	cb func(graph NodeTraverser) error, reset func()) error {
 
 	if c.graphCache != nil {
 		return cb(c)
 	}
 
-	return c.db.GraphSession(cb, reset)
+	return c.db.GraphSession(ctx, cb, reset)
 }
 
 // ForEachNodeCached iterates through all the stored vertices/nodes in the

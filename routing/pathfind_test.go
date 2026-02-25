@@ -3326,7 +3326,7 @@ func dbFindPath(graph *graphdb.VersionedGraph,
 	}
 
 	var route []*unifiedEdge
-	err = graph.GraphSession(func(graph graphdb.NodeTraverser) error {
+	err = graph.GraphSession(ctx, func(graph graphdb.NodeTraverser) error {
 		route, _, err = findPath(
 			&graphParams{
 				additionalEdges: additionalEdges,

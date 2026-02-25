@@ -3316,10 +3316,8 @@ func (s *SQLStore) IsClosedScid(ctx context.Context,
 // instance which can be used to perform queries against the channel graph.
 //
 // NOTE: part of the Store interface.
-func (s *SQLStore) GraphSession(cb func(graph NodeTraverser) error,
-	reset func()) error {
-
-	var ctx = context.TODO()
+func (s *SQLStore) GraphSession(ctx context.Context,
+	cb func(graph NodeTraverser) error, reset func()) error {
 
 	return s.db.ExecTx(ctx, sqldb.ReadTxOpt(), func(db SQLQueries) error {
 		return cb(newSQLNodeTraverser(db, s.cfg.ChainHash))

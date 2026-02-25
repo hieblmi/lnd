@@ -4487,8 +4487,8 @@ func (c *KVStore) IsClosedScid(_ context.Context,
 
 // GraphSession will provide the call-back with access to a NodeTraverser
 // instance which can be used to perform queries against the channel graph.
-func (c *KVStore) GraphSession(cb func(graph NodeTraverser) error,
-	reset func()) error {
+func (c *KVStore) GraphSession(_ context.Context,
+	cb func(graph NodeTraverser) error, reset func()) error {
 
 	return c.db.View(func(tx walletdb.ReadTx) error {
 		return cb(&nodeTraverserSession{

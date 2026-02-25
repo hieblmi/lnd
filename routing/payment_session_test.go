@@ -1,6 +1,7 @@
 package routing
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -260,8 +261,8 @@ func (g *sessionGraph) sourceNode() route.Vertex {
 	return route.Vertex{}
 }
 
-func (g *sessionGraph) GraphSession(cb func(graph graphdb.NodeTraverser) error,
-	_ func()) error {
+func (g *sessionGraph) GraphSession(_ context.Context,
+	cb func(graph graphdb.NodeTraverser) error, _ func()) error {
 
 	return cb(g)
 }

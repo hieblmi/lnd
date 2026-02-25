@@ -234,8 +234,8 @@ func (m *mockGraph) FetchNodeFeatures(_ context.Context,
 // the channel graph.
 //
 // NOTE: Part of the GraphSessionFactory interface.
-func (m *mockGraph) GraphSession(cb func(graph graphdb.NodeTraverser) error,
-	_ func()) error {
+func (m *mockGraph) GraphSession(_ context.Context,
+	cb func(graph graphdb.NodeTraverser) error, _ func()) error {
 
 	return cb(m)
 }
