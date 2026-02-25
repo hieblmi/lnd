@@ -25,7 +25,8 @@ type NodeTraverser interface {
 		cb func(channel *DirectedChannel) error, reset func()) error
 
 	// FetchNodeFeatures returns the features of the given node.
-	FetchNodeFeatures(nodePub route.Vertex) (*lnwire.FeatureVector, error)
+	FetchNodeFeatures(ctx context.Context,
+		nodePub route.Vertex) (*lnwire.FeatureVector, error)
 }
 
 // Store represents the main interface for the channel graph database for all
@@ -37,7 +38,7 @@ type Store interface { //nolint:interfacebloat
 		cb func(channel *DirectedChannel) error, reset func()) error
 
 	// FetchNodeFeatures returns the features of the given node.
-	FetchNodeFeatures(v lnwire.GossipVersion,
+	FetchNodeFeatures(ctx context.Context, v lnwire.GossipVersion,
 		nodePub route.Vertex) (*lnwire.FeatureVector, error)
 
 	// AddNode adds a vertex/node to the graph database. If the

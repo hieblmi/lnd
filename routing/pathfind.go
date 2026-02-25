@@ -3,6 +3,7 @@ package routing
 import (
 	"bytes"
 	"container/heap"
+	"context"
 	"errors"
 	"fmt"
 	"math"
@@ -621,7 +622,9 @@ func findPath(g *graphParams, r *RestrictParams, cfg *PathFindingConfig,
 	features := r.DestFeatures
 	if features == nil {
 		var err error
-		features, err = g.graph.FetchNodeFeatures(target)
+		features, err = g.graph.FetchNodeFeatures(
+			context.TODO(), target,
+		)
 		if err != nil {
 			return nil, 0, err
 		}
@@ -1019,7 +1022,9 @@ func findPath(g *graphParams, r *RestrictParams, cfg *PathFindingConfig,
 		}
 
 		// Fetch node features fresh from the graph.
-		fromFeatures, err := g.graph.FetchNodeFeatures(node)
+		fromFeatures, err := g.graph.FetchNodeFeatures(
+			context.TODO(), node,
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -1349,7 +1354,7 @@ func findBlindedPaths(g Graph, target route.Vertex,
 			return true, nil
 		}
 
-		features, err := g.FetchNodeFeatures(node)
+		features, err := g.FetchNodeFeatures(context.TODO(), node)
 		if err != nil {
 			return false, err
 		}

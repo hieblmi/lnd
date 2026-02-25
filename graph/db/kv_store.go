@@ -684,7 +684,7 @@ func (c *KVStore) ForEachNodeDirectedChannel(v lnwire.GossipVersion,
 // known for the node, an empty feature vector is returned.
 //
 // NOTE: this is part of the graphdb.NodeTraverser interface.
-func (c *KVStore) FetchNodeFeatures(v lnwire.GossipVersion,
+func (c *KVStore) FetchNodeFeatures(_ context.Context, v lnwire.GossipVersion,
 	nodePub route.Vertex) (*lnwire.FeatureVector, error) {
 
 	if v != lnwire.GossipVersion1 {
@@ -4511,7 +4511,8 @@ func (c *nodeTraverserSession) ForEachNodeDirectedChannel(
 // unknown, assume no additional features are supported.
 //
 // NOTE: Part of the NodeTraverser interface.
-func (c *nodeTraverserSession) FetchNodeFeatures(nodePub route.Vertex) (
+func (c *nodeTraverserSession) FetchNodeFeatures(_ context.Context,
+	nodePub route.Vertex) (
 	*lnwire.FeatureVector, error) {
 
 	return c.db.fetchNodeFeatures(c.tx, nodePub)
