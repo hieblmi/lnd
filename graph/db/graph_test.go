@@ -11,7 +11,6 @@ import (
 	"math"
 	prand "math/rand"
 	"net"
-	"reflect"
 	"sync"
 	"testing"
 	"time"
@@ -1196,8 +1195,8 @@ func testEdgeInfoUpdates(t *testing.T, v lnwire.GossipVersion) {
 	// been inserted properly.
 	dbEdgeInfo, dbEdge1, dbEdge2, err := graph.FetchChannelEdgesByID(chanID)
 	require.NoError(t, err, "unable to fetch channel by ID")
-	require.NoError(t, compareEdgePolicies(dbEdge1, edge1))
-	require.NoError(t, compareEdgePolicies(dbEdge2, edge2))
+	compareEdgePolicies(t, dbEdge1, edge1)
+	compareEdgePolicies(t, dbEdge2, edge2)
 	assertEdgeInfoEqual(t, dbEdgeInfo, edgeInfo)
 
 	// Next, attempt to query the channel edges according to the outpoint
@@ -1206,8 +1205,8 @@ func testEdgeInfoUpdates(t *testing.T, v lnwire.GossipVersion) {
 		&outpoint,
 	)
 	require.NoError(t, err, "unable to fetch channel by ID")
-	require.NoError(t, compareEdgePolicies(dbEdge1, edge1))
-	require.NoError(t, compareEdgePolicies(dbEdge2, edge2))
+	compareEdgePolicies(t, dbEdge1, edge1)
+	compareEdgePolicies(t, dbEdge2, edge2)
 	assertEdgeInfoEqual(t, dbEdgeInfo, edgeInfo)
 }
 
@@ -1269,12 +1268,8 @@ func testEdgePolicyCRUD(t *testing.T, v lnwire.GossipVersion) {
 				policy1 *models.ChannelEdgePolicy,
 				policy2 *models.ChannelEdgePolicy) error {
 
-				require.NoError(
-					t, compareEdgePolicies(edge1, policy1),
-				)
-				require.NoError(
-					t, compareEdgePolicies(edge2, policy2),
-				)
+				compareEdgePolicies(t, edge1, policy1)
+				compareEdgePolicies(t, edge2, policy2)
 
 				return nil
 			}, func() {},
@@ -2521,15 +2516,12 @@ func TestChanUpdatesInHorizon(t *testing.T) {
 
 			assertEdgeInfoEqual(t, chanExp.Info, chanRet.Info)
 
-			err = compareEdgePolicies(
-				chanExp.Policy1, chanRet.Policy1,
+			compareEdgePolicies(
+				t, chanExp.Policy1, chanRet.Policy1,
 			)
-			require.NoError(t, err)
-
-			err = compareEdgePolicies(
-				chanExp.Policy2, chanRet.Policy2,
+			compareEdgePolicies(
+				t, chanExp.Policy2, chanRet.Policy2,
 			)
-			require.NoError(t, err)
 		}
 	}
 }
@@ -3773,10 +3765,8 @@ func testFetchChanInfos(t *testing.T, v lnwire.GossipVersion) {
 	require.Len(t, resp, len(edges))
 
 	for i := 0; i < len(resp); i++ {
-		err := compareEdgePolicies(resp[i].Policy1, edges[i].Policy1)
-		require.NoError(t, err)
-		err = compareEdgePolicies(resp[i].Policy2, edges[i].Policy2)
-		require.NoError(t, err)
+		compareEdgePolicies(t, resp[i].Policy1, edges[i].Policy1)
+		compareEdgePolicies(t, resp[i].Policy2, edges[i].Policy2)
 		assertEdgeInfoEqual(t, resp[i].Info, edges[i].Info)
 	}
 }
@@ -4482,7 +4472,7 @@ func TestEdgePolicyMissingMaxHTLC(t *testing.T) {
 
 	// The first edge should have a nil-policy returned
 	require.Nil(t, dbEdge1)
-	require.NoError(t, compareEdgePolicies(dbEdge2, edge2))
+	compareEdgePolicies(t, dbEdge2, edge2)
 	assertEdgeInfoEqual(t, dbEdgeInfo, edgeInfo)
 
 	// Now add the original, unmodified edge policy, and make sure the edge
@@ -4491,8 +4481,8 @@ func TestEdgePolicyMissingMaxHTLC(t *testing.T) {
 
 	dbEdgeInfo, dbEdge1, dbEdge2, err = graph.FetchChannelEdgesByID(chanID)
 	require.NoError(t, err, "unable to fetch channel by ID")
-	require.NoError(t, compareEdgePolicies(dbEdge1, edge1))
-	require.NoError(t, compareEdgePolicies(dbEdge2, edge2))
+	compareEdgePolicies(t, dbEdge1, edge1)
+	compareEdgePolicies(t, dbEdge2, edge2)
 	assertEdgeInfoEqual(t, dbEdgeInfo, edgeInfo)
 }
 
@@ -4624,7 +4614,9 @@ func compareNodes(t *testing.T, a, b *models.Node) {
 
 // compareEdgePolicies compares two ChannelEdgePolicy values for semantic
 // equality after normalizing version-specific/backend-specific differences.
-func compareEdgePolicies(a, b *models.ChannelEdgePolicy) error {
+func compareEdgePolicies(t testing.TB, a, b *models.ChannelEdgePolicy) {
+	t.Helper()
+
 	//nolint:ll
 	normalize := func(p *models.ChannelEdgePolicy) *models.ChannelEdgePolicy {
 		if p == nil {
@@ -4660,12 +4652,7 @@ func compareEdgePolicies(a, b *models.ChannelEdgePolicy) error {
 
 	normalizedA := normalize(a)
 	normalizedB := normalize(b)
-	if !reflect.DeepEqual(normalizedA, normalizedB) {
-		return fmt.Errorf("expected %v, got %v", normalizedA,
-			normalizedB)
-	}
-
-	return nil
+	require.Equal(t, normalizedA, normalizedB)
 }
 
 // TestLightningNodeSigVerification checks that we can use the Node's
