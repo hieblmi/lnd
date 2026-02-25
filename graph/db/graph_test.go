@@ -714,7 +714,7 @@ func testEdgeInsertionDeletion(t *testing.T, v lnwire.GossipVersion) {
 	require.ErrorIs(t, err, ErrZombieEdge)
 	require.NotNil(t, edge)
 
-	isZombie, _, _, err := graph.IsZombieEdge(chanID)
+	isZombie, _, _, err := graph.IsZombieEdge(ctx, chanID)
 	require.NoError(t, err)
 	require.True(t, isZombie)
 
@@ -2940,7 +2940,9 @@ func TestFilterKnownChanIDsZombieRevival(t *testing.T) {
 	)
 
 	isZombie := func(scid lnwire.ShortChannelID) bool {
-		zombie, _, _, err := graph.IsZombieEdge(scid.ToUint64())
+		zombie, _, _, err := graph.IsZombieEdge(
+			ctx, scid.ToUint64(),
+		)
 		require.NoError(t, err)
 
 		return zombie
@@ -4562,7 +4564,7 @@ func TestGraphZombieIndex(t *testing.T) {
 
 	// Since the edge is known the graph and it isn't a zombie, IsZombieEdge
 	// should not report the channel as a zombie.
-	isZombie, _, _, err := graph.IsZombieEdge(edge.ChannelID)
+	isZombie, _, _, err := graph.IsZombieEdge(ctx, edge.ChannelID)
 	require.NoError(t, err)
 	require.False(t, isZombie)
 	assertNumZombies(t, graph, 0)
@@ -4571,7 +4573,9 @@ func TestGraphZombieIndex(t *testing.T) {
 	// to see it within the index.
 	err = graph.DeleteChannelEdges(false, true, edge.ChannelID)
 	require.NoError(t, err, "unable to mark edge as zombie")
-	isZombie, pubKey1, pubKey2, err := graph.IsZombieEdge(edge.ChannelID)
+	isZombie, pubKey1, pubKey2, err := graph.IsZombieEdge(
+		ctx, edge.ChannelID,
+	)
 	require.NoError(t, err)
 	require.True(t, isZombie)
 	require.Equal(t, node1.PubKeyBytes, pubKey1)
@@ -4589,7 +4593,7 @@ func TestGraphZombieIndex(t *testing.T) {
 		ErrZombieEdgeNotFound,
 	)
 
-	isZombie, _, _, err = graph.IsZombieEdge(edge.ChannelID)
+	isZombie, _, _, err = graph.IsZombieEdge(ctx, edge.ChannelID)
 	require.NoError(t, err)
 	require.False(t, isZombie)
 
@@ -4602,7 +4606,7 @@ func TestGraphZombieIndex(t *testing.T) {
 	)
 	require.NoError(t, err, "unable to mark edge as zombie")
 
-	isZombie, _, _, err = graph.IsZombieEdge(edge.ChannelID)
+	isZombie, _, _, err = graph.IsZombieEdge(ctx, edge.ChannelID)
 	require.NoError(t, err)
 	require.True(t, isZombie)
 	assertNumZombies(t, graph, 1)

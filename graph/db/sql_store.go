@@ -1865,11 +1865,10 @@ func (s *SQLStore) MarkEdgeLive(ctx context.Context, chanID uint64) error {
 // returned.
 //
 // NOTE: part of the Store interface.
-func (s *SQLStore) IsZombieEdge(v lnwire.GossipVersion,
+func (s *SQLStore) IsZombieEdge(ctx context.Context, v lnwire.GossipVersion,
 	chanID uint64) (bool, [33]byte, [33]byte, error) {
 
 	var (
-		ctx              = context.TODO()
 		isZombie         bool
 		pubKey1, pubKey2 route.Vertex
 		chanIDB          = channelIDToBytes(chanID)
