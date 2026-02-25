@@ -674,10 +674,10 @@ func (c *ChannelGraph) DisabledChannelIDs(ctx context.Context,
 }
 
 // HasV1ChannelEdge returns true if the database knows of a channel edge.
-func (c *ChannelGraph) HasV1ChannelEdge(chanID uint64) (time.Time,
-	time.Time, bool, bool, error) {
+func (c *ChannelGraph) HasV1ChannelEdge(ctx context.Context,
+	chanID uint64) (time.Time, time.Time, bool, bool, error) {
 
-	return c.db.HasV1ChannelEdge(chanID)
+	return c.db.HasV1ChannelEdge(ctx, chanID)
 }
 
 // HasChannelEdge returns true if the database knows of a channel edge.

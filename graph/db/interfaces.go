@@ -211,8 +211,8 @@ type Store interface { //nolint:interfacebloat
 	// last time the edge was updated for both directed edges are returned
 	// along with the boolean. If it is not found, then the zombie index is
 	// checked and its result is returned as the second boolean.
-	HasV1ChannelEdge(chanID uint64) (time.Time, time.Time, bool, bool,
-		error)
+	HasV1ChannelEdge(ctx context.Context, chanID uint64) (
+		time.Time, time.Time, bool, bool, error)
 
 	// HasChannelEdge returns true if the database knows of a channel edge
 	// with the passed channel ID and gossip version, and false otherwise.

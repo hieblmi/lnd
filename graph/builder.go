@@ -1151,7 +1151,7 @@ func (b *Builder) updateEdge(ctx context.Context,
 	defer b.channelEdgeMtx.Unlock(policy.ChannelID)
 
 	edge1Timestamp, edge2Timestamp, exists, isZombie, err :=
-		b.cfg.Graph.HasV1ChannelEdge(policy.ChannelID)
+		b.cfg.Graph.HasV1ChannelEdge(ctx, policy.ChannelID)
 	if err != nil && !errors.Is(err, graphdb.ErrGraphNoEdgesFound) {
 		return fmt.Errorf("unable to check for edge existence: %w", err)
 	}
@@ -1366,7 +1366,9 @@ func (b *Builder) IsStaleEdgePolicy(chanID lnwire.ShortChannelID,
 	timestamp time.Time, flags lnwire.ChanUpdateChanFlags) bool {
 
 	edge1Timestamp, edge2Timestamp, exists, isZombie, err :=
-		b.cfg.Graph.HasV1ChannelEdge(chanID.ToUint64())
+		b.cfg.Graph.HasV1ChannelEdge(
+			context.TODO(), chanID.ToUint64(),
+		)
 	if err != nil {
 		log.Debugf("Check stale edge policy got error: %v", err)
 		return false

@@ -2244,10 +2244,8 @@ func (s *SQLStore) FetchChannelEdgesByOutpoint(ctx context.Context,
 // result is returned as the second boolean.
 //
 // NOTE: part of the Store interface.
-func (s *SQLStore) HasV1ChannelEdge(chanID uint64) (time.Time, time.Time, bool,
-	bool, error) {
-
-	ctx := context.TODO()
+func (s *SQLStore) HasV1ChannelEdge(ctx context.Context,
+	chanID uint64) (time.Time, time.Time, bool, bool, error) {
 
 	var (
 		exists          bool

@@ -1318,7 +1318,7 @@ func (c *KVStore) addChannelEdge(tx kvdb.RwTx,
 // the edge was updated for both directed edges are returned along with the
 // boolean. If it is not found, then the zombie index is checked and its
 // result is returned as the second boolean.
-func (c *KVStore) HasV1ChannelEdge(
+func (c *KVStore) HasV1ChannelEdge(_ context.Context,
 	chanID uint64) (time.Time, time.Time, bool, bool, error) {
 
 	var (
@@ -1434,7 +1434,9 @@ func (c *KVStore) HasChannelEdge(v lnwire.GossipVersion,
 		return false, false, ErrVersionNotSupportedForKVDB
 	}
 
-	_, _, exists, isZombie, err := c.HasV1ChannelEdge(chanID)
+	_, _, exists, isZombie, err := c.HasV1ChannelEdge(
+		context.TODO(), chanID,
+	)
 
 	return exists, isZombie, err
 }
