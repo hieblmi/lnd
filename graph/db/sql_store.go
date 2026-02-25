@@ -460,10 +460,9 @@ func (s *SQLStore) FetchNodeFeatures(ctx context.Context,
 //
 // NOTE: part of the Store interface.
 func (s *SQLStore) DisabledChannelIDs(
-	v lnwire.GossipVersion) ([]uint64, error) {
+	ctx context.Context, v lnwire.GossipVersion) ([]uint64, error) {
 
 	var (
-		ctx     = context.TODO()
 		chanIDs []uint64
 	)
 	err := s.db.ExecTx(ctx, sqldb.ReadTxOpt(), func(db SQLQueries) error {

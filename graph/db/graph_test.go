@@ -4359,7 +4359,7 @@ func testDisabledChannelIDs(t *testing.T, v lnwire.GossipVersion) {
 	require.NoError(t, graph.AddChannelEdge(ctx, edgeInfo))
 
 	// Ensure no disabled channels exist in the bucket on start.
-	disabledChanIds, err := graph.DisabledChannelIDs()
+	disabledChanIds, err := graph.DisabledChannelIDs(ctx)
 	require.NoError(t, err, "unable to get disabled channel ids")
 	require.Empty(t, disabledChanIds)
 
@@ -4372,7 +4372,7 @@ func testDisabledChannelIDs(t *testing.T, v lnwire.GossipVersion) {
 		edge1.DisableFlags |= lnwire.ChanUpdateDisableIncoming
 	}
 	require.NoError(t, graph.UpdateEdgePolicy(ctx, edge1))
-	disabledChanIds, err = graph.DisabledChannelIDs()
+	disabledChanIds, err = graph.DisabledChannelIDs(ctx)
 	require.NoError(t, err, "unable to get disabled channel ids")
 	require.Empty(t, disabledChanIds)
 
@@ -4385,7 +4385,7 @@ func testDisabledChannelIDs(t *testing.T, v lnwire.GossipVersion) {
 		edge2.DisableFlags |= lnwire.ChanUpdateDisableIncoming
 	}
 	require.NoError(t, graph.UpdateEdgePolicy(ctx, edge2))
-	disabledChanIds, err = graph.DisabledChannelIDs()
+	disabledChanIds, err = graph.DisabledChannelIDs(ctx)
 	require.NoError(t, err, "unable to get disabled channel ids")
 	require.Equal(t, []uint64{edgeInfo.ChannelID}, disabledChanIds)
 
@@ -4394,7 +4394,7 @@ func testDisabledChannelIDs(t *testing.T, v lnwire.GossipVersion) {
 	require.NoError(t, graph.DeleteChannelEdges(
 		false, true, edgeInfo.ChannelID,
 	))
-	disabledChanIds, err = graph.DisabledChannelIDs()
+	disabledChanIds, err = graph.DisabledChannelIDs(ctx)
 	require.NoError(t, err, "unable to get disabled channel ids")
 	require.Empty(t, disabledChanIds)
 }

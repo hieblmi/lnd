@@ -773,7 +773,7 @@ func (c *KVStore) ForEachNodeCached(ctx context.Context, withAddrs bool,
 // A channel is disabled when two of the associated ChanelEdgePolicies
 // have their disabled bit on.
 func (c *KVStore) DisabledChannelIDs(
-	v lnwire.GossipVersion) ([]uint64, error) {
+	_ context.Context, v lnwire.GossipVersion) ([]uint64, error) {
 
 	if v != lnwire.GossipVersion1 {
 		return nil, ErrVersionNotSupportedForKVDB

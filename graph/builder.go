@@ -574,7 +574,7 @@ func (b *Builder) pruneZombieChans() error {
 	// the channel being closed and can prune it from our graph.
 	if b.cfg.AssumeChannelValid {
 		disabledChanIDs, err := b.cfg.Graph.DisabledChannelIDs(
-			lnwire.GossipVersion1,
+			context.TODO(), lnwire.GossipVersion1,
 		)
 		if err != nil {
 			return fmt.Errorf("unable to get disabled channels "+

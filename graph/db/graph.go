@@ -662,10 +662,11 @@ func (c *ChannelGraph) ForEachChannel(ctx context.Context,
 }
 
 // DisabledChannelIDs returns the channel ids of disabled channels.
-func (c *ChannelGraph) DisabledChannelIDs(v lnwire.GossipVersion) (
+func (c *ChannelGraph) DisabledChannelIDs(ctx context.Context,
+	v lnwire.GossipVersion) (
 	[]uint64, error) {
 
-	return c.db.DisabledChannelIDs(v)
+	return c.db.DisabledChannelIDs(ctx, v)
 }
 
 // HasV1ChannelEdge returns true if the database knows of a channel edge.
@@ -952,8 +953,10 @@ func (c *VersionedGraph) ForEachChannelCacheable(
 }
 
 // DisabledChannelIDs returns the channel ids of disabled channels.
-func (c *VersionedGraph) DisabledChannelIDs() ([]uint64, error) {
-	return c.db.DisabledChannelIDs(c.v)
+func (c *VersionedGraph) DisabledChannelIDs(
+	ctx context.Context) ([]uint64, error) {
+
+	return c.db.DisabledChannelIDs(ctx, c.v)
 }
 
 // FetchChanInfos returns the set of channel edges for the passed channel IDs.
