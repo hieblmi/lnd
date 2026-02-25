@@ -2540,7 +2540,7 @@ func TestNodeUpdatesInHorizon(t *testing.T) {
 	// If we issue an arbitrary query before we insert any nodes into the
 	// database, then we shouldn't get any results back.
 	nodeUpdatesIter := graph.NodeUpdatesInHorizon(
-		time.Unix(999, 0), time.Unix(9999, 0),
+		ctx, time.Unix(999, 0), time.Unix(9999, 0),
 	)
 	nodeUpdates, err := fn.CollectErr(nodeUpdatesIter)
 	require.NoError(t, err, "unable to query for node updates")
@@ -2615,7 +2615,7 @@ func TestNodeUpdatesInHorizon(t *testing.T) {
 	}
 	for _, queryCase := range queryCases {
 		iter := graph.NodeUpdatesInHorizon(
-			queryCase.start, queryCase.end,
+			ctx, queryCase.start, queryCase.end,
 		)
 
 		resp, err := fn.CollectErr(iter)
@@ -2743,7 +2743,7 @@ func testNodeUpdatesWithBatchSize(t *testing.T, ctx context.Context,
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			iter := testGraph.NodeUpdatesInHorizon(
-				tc.start, tc.end,
+				ctx, tc.start, tc.end,
 				WithNodeUpdateIterBatchSize(
 					batchSize,
 				),
@@ -2816,7 +2816,7 @@ func TestNodeUpdatesInHorizonEarlyTermination(t *testing.T) {
 	for _, stopAt := range terminationPoints {
 		t.Run(fmt.Sprintf("StopAt%d", stopAt), func(t *testing.T) {
 			iter := graph.NodeUpdatesInHorizon(
-				startTime, startTime.Add(200*time.Hour),
+				ctx, startTime, startTime.Add(200*time.Hour),
 				WithNodeUpdateIterBatchSize(10),
 			)
 
@@ -4091,7 +4091,9 @@ func TestNodePruningUpdateIndexDeletion(t *testing.T) {
 	// update time of our test node.
 	startTime := time.Unix(9, 0)
 	endTime := node1.LastUpdate.Add(time.Minute)
-	nodesInHorizonIter := graph.NodeUpdatesInHorizon(startTime, endTime)
+	nodesInHorizonIter := graph.NodeUpdatesInHorizon(
+		ctx, startTime, endTime,
+	)
 
 	// We should only have a single node, and that node should exactly
 	// match the node we just inserted.
@@ -4107,7 +4109,9 @@ func TestNodePruningUpdateIndexDeletion(t *testing.T) {
 
 	// Now that the node has been deleted, we'll again query the nodes in
 	// the horizon. This time we should have no nodes at all.
-	nodesInHorizonIter = graph.NodeUpdatesInHorizon(startTime, endTime)
+	nodesInHorizonIter = graph.NodeUpdatesInHorizon(
+		ctx, startTime, endTime,
+	)
 	nodesInHorizon, err = fn.CollectErr(nodesInHorizonIter)
 	require.NoError(t, err, "unable to fetch nodes in horizon")
 	require.Empty(t, nodesInHorizon)

@@ -610,7 +610,8 @@ func (s *SQLStore) SetSourceNode(ctx context.Context,
 // announcements.
 //
 // NOTE: This is part of the Store interface.
-func (s *SQLStore) NodeUpdatesInHorizon(startTime, endTime time.Time,
+func (s *SQLStore) NodeUpdatesInHorizon(ctx context.Context,
+	startTime, endTime time.Time,
 	opts ...IteratorOption) iter.Seq2[*models.Node, error] {
 
 	cfg := defaultIteratorConfig()
@@ -620,7 +621,6 @@ func (s *SQLStore) NodeUpdatesInHorizon(startTime, endTime time.Time,
 
 	return func(yield func(*models.Node, error) bool) {
 		var (
-			ctx            = context.TODO()
 			lastUpdateTime sql.NullInt64
 			lastPubKey     = make([]byte, 33)
 			hasMore        = true

@@ -122,7 +122,7 @@ type Store interface { //nolint:interfacebloat
 	// an update timestamp within the passed range. This method can be used
 	// by two nodes to quickly determine if they have the same set of up to
 	// date node announcements.
-	NodeUpdatesInHorizon(startTime, endTime time.Time,
+	NodeUpdatesInHorizon(ctx context.Context, startTime, endTime time.Time,
 		opts ...IteratorOption) iter.Seq2[*models.Node, error]
 
 	// FetchNode attempts to look up a target node by its identity

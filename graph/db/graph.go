@@ -633,10 +633,11 @@ func (c *ChannelGraph) ForEachNodeCacheable(ctx context.Context,
 
 // NodeUpdatesInHorizon returns all known lightning nodes with updates in the
 // range.
-func (c *ChannelGraph) NodeUpdatesInHorizon(startTime, endTime time.Time,
+func (c *ChannelGraph) NodeUpdatesInHorizon(ctx context.Context,
+	startTime, endTime time.Time,
 	opts ...IteratorOption) iter.Seq2[*models.Node, error] {
 
-	return c.db.NodeUpdatesInHorizon(startTime, endTime, opts...)
+	return c.db.NodeUpdatesInHorizon(ctx, startTime, endTime, opts...)
 }
 
 // HasV1Node determines if the graph has a vertex identified by the target node
