@@ -241,7 +241,7 @@ func (c *ChanSeries) FilterChannelRange(_ chainhash.Hash, startHeight,
 	error) {
 
 	return c.graph.FilterChannelRange(
-		startHeight, endHeight, withTimestamps,
+		context.TODO(), startHeight, endHeight, withTimestamps,
 	)
 }
 

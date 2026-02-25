@@ -3477,7 +3477,7 @@ func TestFilterChannelRange(t *testing.T) {
 
 	// If we try to filter a channel range before we have any channels
 	// inserted, we should get an empty slice of results.
-	resp, err := graph.FilterChannelRange(10, 100, false)
+	resp, err := graph.FilterChannelRange(ctx, 10, 100, false)
 	require.NoError(t, err)
 	require.Empty(t, resp)
 
@@ -3652,7 +3652,7 @@ func TestFilterChannelRange(t *testing.T) {
 
 			// First, do the query without requesting timestamps.
 			resp, err := graph.FilterChannelRange(
-				test.startHeight, test.endHeight, false,
+				ctx, test.startHeight, test.endHeight, false,
 			)
 			require.NoError(t, err)
 
@@ -3666,7 +3666,7 @@ func TestFilterChannelRange(t *testing.T) {
 
 			// Now, query the timestamps as well.
 			resp, err = graph.FilterChannelRange(
-				test.startHeight, test.endHeight, true,
+				ctx, test.startHeight, test.endHeight, true,
 			)
 			require.NoError(t, err)
 

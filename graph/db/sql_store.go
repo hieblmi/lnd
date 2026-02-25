@@ -1664,11 +1664,10 @@ func (s *SQLStore) ForEachChannel(ctx context.Context,
 // will be included in the response.
 //
 // NOTE: This is part of the Store interface.
-func (s *SQLStore) FilterChannelRange(startHeight, endHeight uint32,
-	withTimestamps bool) ([]BlockChannelRange, error) {
+func (s *SQLStore) FilterChannelRange(ctx context.Context, startHeight,
+	endHeight uint32, withTimestamps bool) ([]BlockChannelRange, error) {
 
 	var (
-		ctx       = context.TODO()
 		startSCID = &lnwire.ShortChannelID{
 			BlockHeight: startHeight,
 		}

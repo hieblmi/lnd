@@ -277,8 +277,9 @@ type Store interface { //nolint:interfacebloat
 	// offline. If withTimestamps is true then the timestamp info of the
 	// latest received channel update messages of the channel will be
 	// included in the response.
-	FilterChannelRange(startHeight, endHeight uint32, withTimestamps bool) (
-		[]BlockChannelRange, error)
+	FilterChannelRange(ctx context.Context, startHeight,
+		endHeight uint32,
+		withTimestamps bool) ([]BlockChannelRange, error)
 
 	// FetchChanInfos returns the set of channel edges that correspond to
 	// the passed channel ID's. If an edge is the query is unknown to the

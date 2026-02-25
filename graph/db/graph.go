@@ -711,10 +711,13 @@ func (c *ChannelGraph) ChanUpdatesInHorizon(ctx context.Context,
 }
 
 // FilterChannelRange returns channel IDs within the passed block height range.
-func (c *ChannelGraph) FilterChannelRange(startHeight, endHeight uint32,
-	withTimestamps bool) ([]BlockChannelRange, error) {
+func (c *ChannelGraph) FilterChannelRange(ctx context.Context,
+	startHeight, endHeight uint32, withTimestamps bool) (
+	[]BlockChannelRange, error) {
 
-	return c.db.FilterChannelRange(startHeight, endHeight, withTimestamps)
+	return c.db.FilterChannelRange(
+		ctx, startHeight, endHeight, withTimestamps,
+	)
 }
 
 // FetchChanInfos returns the set of channel edges for the passed channel IDs.
