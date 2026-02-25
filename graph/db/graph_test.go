@@ -699,7 +699,9 @@ func testEdgeInsertionDeletion(t *testing.T, v lnwire.GossipVersion) {
 
 	// Next, attempt to delete the edge from the database, again this
 	// should proceed without any issues.
-	require.NoError(t, graph.DeleteChannelEdges(false, true, chanID))
+	require.NoError(t, graph.DeleteChannelEdges(
+		ctx, false, true, chanID,
+	))
 	assertNoEdge(t, graph.ChannelGraph, chanID)
 
 	// Ensure that any query attempts to lookup the delete channel edge are
@@ -720,7 +722,7 @@ func testEdgeInsertionDeletion(t *testing.T, v lnwire.GossipVersion) {
 
 	// Finally, attempt to delete a (now) non-existent edge within the
 	// database, this should result in an error.
-	err = graph.DeleteChannelEdges(false, true, chanID)
+	err = graph.DeleteChannelEdges(ctx, false, true, chanID)
 	require.ErrorIs(t, err, ErrEdgeNotFound)
 }
 
@@ -3064,7 +3066,9 @@ func TestFilterKnownChanIDs(t *testing.T) {
 			node1, node2,
 		)
 		require.NoError(t, graph.AddChannelEdge(ctx, channel))
-		err := graph.DeleteChannelEdges(false, true, channel.ChannelID)
+		err := graph.DeleteChannelEdges(
+			ctx, false, true, channel.ChannelID,
+		)
 		require.NoError(t, err)
 
 		zombieIDs = append(
@@ -3403,7 +3407,8 @@ func TestStressTestChannelGraphAPI(t *testing.T) {
 				}
 
 				err := graph.DeleteChannelEdges(
-					strictPruning, markZombie, chanIDs...,
+					ctx, strictPruning, markZombie,
+					chanIDs...,
 				)
 				if err != nil &&
 					!errors.Is(err, ErrEdgeNotFound) {
@@ -3761,7 +3766,9 @@ func testFetchChanInfos(t *testing.T, v lnwire.GossipVersion) {
 		v, 666, 0, 0, 0, node1, node2,
 	)
 	require.NoError(t, graph.AddChannelEdge(ctx, zombieChan))
-	err := graph.DeleteChannelEdges(false, true, zombieChan.ChannelID)
+	err := graph.DeleteChannelEdges(
+		ctx, false, true, zombieChan.ChannelID,
+	)
 	require.NoError(t, err, "unable to delete and mark edge zombie")
 	edgeQuery = append(edgeQuery, zombieChanID.ToUint64())
 
@@ -4226,7 +4233,7 @@ func testNodeIsPublic(t *testing.T, v lnwire.GossipVersion) {
 	// has any advertised edges.
 	for _, graph := range graphs {
 		err := graph.DeleteChannelEdges(
-			false, true, aliceBobEdge.ChannelID,
+			ctx, false, true, aliceBobEdge.ChannelID,
 		)
 		require.NoError(t, err, "unable to remove edge")
 	}
@@ -4243,7 +4250,7 @@ func testNodeIsPublic(t *testing.T, v lnwire.GossipVersion) {
 	// it without it being advertised.
 	for _, graph := range graphs {
 		err := graph.DeleteChannelEdges(
-			false, true, bobCarolEdge.ChannelID,
+			ctx, false, true, bobCarolEdge.ChannelID,
 		)
 		require.NoError(t, err, "unable to remove edge")
 
@@ -4404,7 +4411,7 @@ func testDisabledChannelIDs(t *testing.T, v lnwire.GossipVersion) {
 	// Delete the channel edge and ensure it is removed from the disabled
 	// list.
 	require.NoError(t, graph.DeleteChannelEdges(
-		false, true, edgeInfo.ChannelID,
+		ctx, false, true, edgeInfo.ChannelID,
 	))
 	disabledChanIds, err = graph.DisabledChannelIDs(ctx)
 	require.NoError(t, err, "unable to get disabled channel ids")
@@ -4571,7 +4578,7 @@ func TestGraphZombieIndex(t *testing.T) {
 
 	// If we delete the edge and mark it as a zombie, then we should expect
 	// to see it within the index.
-	err = graph.DeleteChannelEdges(false, true, edge.ChannelID)
+	err = graph.DeleteChannelEdges(ctx, false, true, edge.ChannelID)
 	require.NoError(t, err, "unable to mark edge as zombie")
 	isZombie, pubKey1, pubKey2, err := graph.IsZombieEdge(
 		ctx, edge.ChannelID,

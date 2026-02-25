@@ -630,7 +630,7 @@ func (b *Builder) pruneZombieChans() error {
 		log.Tracef("Pruning zombie channel with ChannelID(%v)", chanID)
 	}
 	err := b.v1Graph.DeleteChannelEdges(
-		b.cfg.StrictZombiePruning, true, toPrune...,
+		context.TODO(), b.cfg.StrictZombiePruning, true, toPrune...,
 	)
 	if err != nil {
 		return fmt.Errorf("unable to delete zombie channels: %w", err)

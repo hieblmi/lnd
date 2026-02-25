@@ -1934,8 +1934,9 @@ func (c *KVStore) PruneTip() (*chainhash.Hash, uint32, error) {
 // that we require the node that failed to send the fresh update to be the one
 // that resurrects the channel from its zombie state. The markZombie bool
 // denotes whether or not to mark the channel as a zombie.
-func (c *KVStore) DeleteChannelEdges(v lnwire.GossipVersion,
-	strictZombiePruning, markZombie bool, chanIDs ...uint64) (
+func (c *KVStore) DeleteChannelEdges(_ context.Context,
+	v lnwire.GossipVersion, strictZombiePruning, markZombie bool,
+	chanIDs ...uint64) (
 	[]*models.ChannelEdgeInfo, error) {
 
 	if v != lnwire.GossipVersion1 {

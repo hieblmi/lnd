@@ -389,11 +389,11 @@ func (c *ChannelGraph) MarkEdgeLive(ctx context.Context, chanID uint64) error {
 // that we require the node that failed to send the fresh update to be the one
 // that resurrects the channel from its zombie state. The markZombie bool
 // denotes whether to mark the channel as a zombie.
-func (c *ChannelGraph) DeleteChannelEdges(strictZombiePruning, markZombie bool,
-	chanIDs ...uint64) error {
+func (c *ChannelGraph) DeleteChannelEdges(ctx context.Context,
+	strictZombiePruning, markZombie bool, chanIDs ...uint64) error {
 
 	infos, err := c.db.DeleteChannelEdges(
-		lnwire.GossipVersion1, strictZombiePruning, markZombie,
+		ctx, lnwire.GossipVersion1, strictZombiePruning, markZombie,
 		chanIDs...,
 	)
 	if err != nil {
@@ -889,11 +889,11 @@ func (c *VersionedGraph) SourceNode(ctx context.Context) (*models.Node,
 // that we require the node that failed to send the fresh update to be the one
 // that resurrects the channel from its zombie state. The markZombie bool
 // denotes whether to mark the channel as a zombie.
-func (c *VersionedGraph) DeleteChannelEdges(strictZombiePruning,
-	markZombie bool, chanIDs ...uint64) error {
+func (c *VersionedGraph) DeleteChannelEdges(ctx context.Context,
+	strictZombiePruning, markZombie bool, chanIDs ...uint64) error {
 
 	infos, err := c.db.DeleteChannelEdges(
-		c.v, strictZombiePruning, markZombie, chanIDs...,
+		ctx, c.v, strictZombiePruning, markZombie, chanIDs...,
 	)
 	if err != nil {
 		return err

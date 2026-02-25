@@ -1946,8 +1946,9 @@ func (s *SQLStore) NumZombies(ctx context.Context) (uint64, error) {
 // denotes whether to mark the channel as a zombie.
 //
 // NOTE: part of the Store interface.
-func (s *SQLStore) DeleteChannelEdges(v lnwire.GossipVersion,
-	strictZombiePruning, markZombie bool, chanIDs ...uint64) (
+func (s *SQLStore) DeleteChannelEdges(ctx context.Context,
+	v lnwire.GossipVersion, strictZombiePruning, markZombie bool,
+	chanIDs ...uint64) (
 	[]*models.ChannelEdgeInfo, error) {
 
 	s.cacheMu.Lock()
@@ -1960,10 +1961,7 @@ func (s *SQLStore) DeleteChannelEdges(v lnwire.GossipVersion,
 		chanLookup[chanID] = struct{}{}
 	}
 
-	var (
-		ctx   = context.TODO()
-		edges []*models.ChannelEdgeInfo
-	)
+	var edges []*models.ChannelEdgeInfo
 	err := s.db.ExecTx(ctx, sqldb.WriteTxOpt(), func(db SQLQueries) error {
 		// First, collect all channel rows.
 		var channelRows []sqlc.GetChannelsBySCIDWithPoliciesRow

@@ -1426,7 +1426,7 @@ func newServer(ctx context.Context, cfg *Config, listenAddrs []net.Addr,
 		}
 
 		err = s.v1Graph.DeleteChannelEdges(
-			false, false, scid.ToUint64(),
+			context.TODO(), false, false, scid.ToUint64(),
 		)
 		return ourPolicy, err
 	}
