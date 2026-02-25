@@ -73,15 +73,17 @@ func (c *ChannelGraph) Start() error {
 	log.Debugf("ChannelGraph starting")
 	defer log.Debug("ChannelGraph started")
 
+	ctx := context.TODO()
+
 	if c.graphCache != nil {
-		if err := c.populateCache(context.TODO()); err != nil {
+		if err := c.populateCache(ctx); err != nil {
 			return fmt.Errorf("could not populate the graph "+
 				"cache: %w", err)
 		}
 	}
 
 	c.wg.Add(1)
-	go c.handleTopologySubscriptions()
+	go c.handleTopologySubscriptions(ctx)
 
 	return nil
 }
@@ -106,7 +108,7 @@ func (c *ChannelGraph) Stop() error {
 // synchronously.
 //
 // NOTE: this MUST be run in a goroutine.
-func (c *ChannelGraph) handleTopologySubscriptions() {
+func (c *ChannelGraph) handleTopologySubscriptions(ctx context.Context) {
 	defer c.wg.Done()
 
 	for {
@@ -118,7 +120,7 @@ func (c *ChannelGraph) handleTopologySubscriptions() {
 			// synchronously so that we can guarantee the order of
 			// notification delivery.
 			c.wg.Add(1)
-			go c.handleTopologyUpdate(update)
+			go c.handleTopologyUpdate(ctx, update)
 
 			// TODO(roasbeef): remove all unconnected vertexes
 			// after N blocks pass with no corresponding
@@ -148,6 +150,9 @@ func (c *ChannelGraph) handleTopologySubscriptions() {
 				ntfnChan: ntfnUpdate.ntfnChan,
 				exit:     make(chan struct{}),
 			})
+
+		case <-ctx.Done():
+			return
 
 		case <-c.quit:
 			return
