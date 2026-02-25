@@ -1417,5 +1417,7 @@ func (b *Builder) IsStaleEdgePolicy(chanID lnwire.ShortChannelID,
 //
 // NOTE: This method is part of the ChannelGraphSource interface.
 func (b *Builder) MarkEdgeLive(chanID lnwire.ShortChannelID) error {
-	return b.cfg.Graph.MarkEdgeLive(chanID.ToUint64())
+	return b.cfg.Graph.MarkEdgeLive(
+		context.TODO(), chanID.ToUint64(),
+	)
 }

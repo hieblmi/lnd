@@ -329,7 +329,7 @@ type Store interface { //nolint:interfacebloat
 
 	// MarkEdgeLive clears an edge from our zombie index, deeming it as
 	// live.
-	MarkEdgeLive(chanID uint64) error
+	MarkEdgeLive(ctx context.Context, chanID uint64) error
 
 	// IsZombieEdge returns whether the edge is considered zombie. If it is
 	// a zombie, then the two node public keys corresponding to this edge

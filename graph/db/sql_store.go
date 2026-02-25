@@ -1815,12 +1815,11 @@ func (s *SQLStore) MarkEdgeZombie(ctx context.Context, chanID uint64,
 // MarkEdgeLive clears an edge from our zombie index, deeming it as live.
 //
 // NOTE: part of the Store interface.
-func (s *SQLStore) MarkEdgeLive(chanID uint64) error {
+func (s *SQLStore) MarkEdgeLive(ctx context.Context, chanID uint64) error {
 	s.cacheMu.Lock()
 	defer s.cacheMu.Unlock()
 
 	var (
-		ctx     = context.TODO()
 		chanIDB = channelIDToBytes(chanID)
 	)
 

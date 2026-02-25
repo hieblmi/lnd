@@ -343,8 +343,8 @@ func (c *ChannelGraph) AddChannelEdge(ctx context.Context,
 // MarkEdgeLive clears an edge from our zombie index, deeming it as live.
 // If the cache is enabled, the edge will be added back to the graph cache if
 // we still have a record of this channel in the DB.
-func (c *ChannelGraph) MarkEdgeLive(chanID uint64) error {
-	err := c.db.MarkEdgeLive(chanID)
+func (c *ChannelGraph) MarkEdgeLive(ctx context.Context, chanID uint64) error {
+	err := c.db.MarkEdgeLive(ctx, chanID)
 	if err != nil {
 		return err
 	}
@@ -547,7 +547,7 @@ func (c *ChannelGraph) FilterKnownChanIDs(chansInfo []ChannelUpdateInfo,
 		// alive, and we let it be added to the set of IDs to query our
 		// peer for.
 		err := c.db.MarkEdgeLive(
-			info.ShortChannelID.ToUint64(),
+			context.TODO(), info.ShortChannelID.ToUint64(),
 		)
 		// Since there is a chance that the edge could have been marked
 		// as "live" between the FilterKnownChanIDs call and the
