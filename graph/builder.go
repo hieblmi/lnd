@@ -1312,7 +1312,7 @@ func (b *Builder) ForAllOutgoingChannels(ctx context.Context,
 func (b *Builder) AddProof(chanID lnwire.ShortChannelID,
 	proof *models.ChannelAuthProof) error {
 
-	return b.cfg.Graph.AddEdgeProof(chanID, proof)
+	return b.cfg.Graph.AddEdgeProof(context.TODO(), chanID, proof)
 }
 
 // IsStaleNode returns true if the graph source has a node announcement for the

@@ -692,10 +692,10 @@ func (c *ChannelGraph) HasChannelEdge(ctx context.Context,
 }
 
 // AddEdgeProof sets the proof of an existing edge in the graph database.
-func (c *ChannelGraph) AddEdgeProof(chanID lnwire.ShortChannelID,
-	proof *models.ChannelAuthProof) error {
+func (c *ChannelGraph) AddEdgeProof(ctx context.Context,
+	chanID lnwire.ShortChannelID, proof *models.ChannelAuthProof) error {
 
-	return c.db.AddEdgeProof(chanID, proof)
+	return c.db.AddEdgeProof(ctx, chanID, proof)
 }
 
 // HighestChanID returns the "highest" known channel ID in the channel graph.

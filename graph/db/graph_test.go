@@ -1611,7 +1611,7 @@ func testAddEdgeProof(t *testing.T, v lnwire.GossipVersion) {
 
 	// Now add just the proof via AddEdgeProof.
 	scid1 := lnwire.NewShortChanIDFromInt(edge1.ChannelID)
-	require.NoError(t, graph.AddEdgeProof(scid1, proof))
+	require.NoError(t, graph.AddEdgeProof(ctx, scid1, proof))
 
 	// Fetch the edge again and assert that the proof is now set.
 	dbEdge, _, _, err = graph.FetchChannelEdgesByID(

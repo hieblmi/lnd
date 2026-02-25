@@ -1440,7 +1440,7 @@ func (c *KVStore) HasChannelEdge(ctx context.Context, v lnwire.GossipVersion,
 }
 
 // AddEdgeProof sets the proof of an existing edge in the graph database.
-func (c *KVStore) AddEdgeProof(chanID lnwire.ShortChannelID,
+func (c *KVStore) AddEdgeProof(_ context.Context, chanID lnwire.ShortChannelID,
 	proof *models.ChannelAuthProof) error {
 
 	// We only support v1 channel proofs in the KVStore.

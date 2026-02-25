@@ -237,7 +237,7 @@ type Store interface { //nolint:interfacebloat
 
 	// AddEdgeProof sets the proof of an existing edge in the graph
 	// database.
-	AddEdgeProof(chanID lnwire.ShortChannelID,
+	AddEdgeProof(ctx context.Context, chanID lnwire.ShortChannelID,
 		proof *models.ChannelAuthProof) error
 
 	// ChannelID attempt to lookup the 8-byte compact channel ID which maps

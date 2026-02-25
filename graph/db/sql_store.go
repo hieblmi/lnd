@@ -3198,8 +3198,8 @@ func (s *SQLStore) DisconnectBlockAtHeight(ctx context.Context,
 // AddEdgeProof sets the proof of an existing edge in the graph database.
 //
 // NOTE: part of the Store interface.
-func (s *SQLStore) AddEdgeProof(scid lnwire.ShortChannelID,
-	proof *models.ChannelAuthProof) error {
+func (s *SQLStore) AddEdgeProof(ctx context.Context,
+	scid lnwire.ShortChannelID, proof *models.ChannelAuthProof) error {
 
 	if !isKnownGossipVersion(proof.Version) {
 		return fmt.Errorf("unsupported gossip version: %d",
@@ -3207,7 +3207,6 @@ func (s *SQLStore) AddEdgeProof(scid lnwire.ShortChannelID,
 	}
 
 	var (
-		ctx       = context.TODO()
 		scidBytes = channelIDToBytes(scid.ToUint64())
 	)
 
