@@ -564,10 +564,10 @@ func (c *ChannelGraph) FilterKnownChanIDs(chansInfo []ChannelUpdateInfo,
 // MarkEdgeZombie attempts to mark a channel identified by its channel ID as a
 // zombie. This method is used on an ad-hoc basis, when channels need to be
 // marked as zombies outside the normal pruning cycle.
-func (c *ChannelGraph) MarkEdgeZombie(chanID uint64,
+func (c *ChannelGraph) MarkEdgeZombie(ctx context.Context, chanID uint64,
 	pubKey1, pubKey2 [33]byte) error {
 
-	err := c.db.MarkEdgeZombie(chanID, pubKey1, pubKey2)
+	err := c.db.MarkEdgeZombie(ctx, chanID, pubKey1, pubKey2)
 	if err != nil {
 		return err
 	}

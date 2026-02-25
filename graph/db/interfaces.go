@@ -324,7 +324,7 @@ type Store interface { //nolint:interfacebloat
 	// MarkEdgeZombie attempts to mark a channel identified by its channel
 	// ID as a zombie. This method is used on an ad-hoc basis, when channels
 	// need to be marked as zombies outside the normal pruning cycle.
-	MarkEdgeZombie(chanID uint64,
+	MarkEdgeZombie(ctx context.Context, chanID uint64,
 		pubKey1, pubKey2 [33]byte) error
 
 	// MarkEdgeLive clears an edge from our zombie index, deeming it as

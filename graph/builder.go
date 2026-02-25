@@ -913,7 +913,9 @@ func (b *Builder) MarkZombieEdge(chanID uint64) error {
 	// so we don't continue to request it. We use the "zero key" for both
 	// node pubkeys so this edge can't be resurrected.
 	var zeroKey [33]byte
-	err := b.cfg.Graph.MarkEdgeZombie(chanID, zeroKey, zeroKey)
+	err := b.cfg.Graph.MarkEdgeZombie(
+		context.TODO(), chanID, zeroKey, zeroKey,
+	)
 	if err != nil {
 		return fmt.Errorf("unable to mark spent chan(id=%v) as a "+
 			"zombie: %w", chanID, err)
