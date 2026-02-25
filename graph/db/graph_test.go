@@ -4535,7 +4535,7 @@ func putSerializedPolicy(t *testing.T, db kvdb.Backend, from []byte,
 func assertNumZombies(t *testing.T, graph *ChannelGraph, expZombies uint64) {
 	t.Helper()
 
-	numZombies, err := graph.NumZombies()
+	numZombies, err := graph.NumZombies(t.Context())
 	require.NoError(t, err, "unable to query number of zombies")
 	require.Equal(t, expZombies, numZombies)
 }

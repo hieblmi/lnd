@@ -761,8 +761,8 @@ func (c *ChannelGraph) IsZombieEdge(ctx context.Context,
 }
 
 // NumZombies returns the current number of zombie channels in the graph.
-func (c *ChannelGraph) NumZombies() (uint64, error) {
-	return c.db.NumZombies()
+func (c *ChannelGraph) NumZombies(ctx context.Context) (uint64, error) {
+	return c.db.NumZombies(ctx)
 }
 
 // PutClosedScid stores a SCID for a closed channel in the database.

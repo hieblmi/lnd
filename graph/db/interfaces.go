@@ -339,7 +339,7 @@ type Store interface { //nolint:interfacebloat
 
 	// NumZombies returns the current number of zombie channels in the
 	// graph.
-	NumZombies() (uint64, error)
+	NumZombies(ctx context.Context) (uint64, error)
 
 	// PutClosedScid stores a SCID for a closed channel in the database.
 	// This is so that we can ignore channel announcements that we know to

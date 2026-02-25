@@ -1912,9 +1912,8 @@ func (s *SQLStore) IsZombieEdge(ctx context.Context, v lnwire.GossipVersion,
 // NumZombies returns the current number of zombie channels in the graph.
 //
 // NOTE: part of the Store interface.
-func (s *SQLStore) NumZombies() (uint64, error) {
+func (s *SQLStore) NumZombies(ctx context.Context) (uint64, error) {
 	var (
-		ctx        = context.TODO()
 		numZombies uint64
 	)
 	err := s.db.ExecTx(ctx, sqldb.ReadTxOpt(), func(db SQLQueries) error {
