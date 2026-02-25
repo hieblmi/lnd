@@ -3112,10 +3112,8 @@ func (s *SQLStore) pruneGraphNodes(ctx context.Context,
 // disconnected block are returned.
 //
 // NOTE: part of the Store interface.
-func (s *SQLStore) DisconnectBlockAtHeight(height uint32) (
-	[]*models.ChannelEdgeInfo, error) {
-
-	ctx := context.TODO()
+func (s *SQLStore) DisconnectBlockAtHeight(ctx context.Context,
+	height uint32) ([]*models.ChannelEdgeInfo, error) {
 
 	var (
 		// Every channel having a ShortChannelID starting at 'height'

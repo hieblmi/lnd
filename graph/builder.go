@@ -366,7 +366,9 @@ func (b *Builder) syncGraphWithChain() error {
 			"(hash=%v)", pruneHeight, pruneHash)
 		// Prune the graph for every channel that was opened at height
 		// >= pruneHeight.
-		_, err := b.cfg.Graph.DisconnectBlockAtHeight(pruneHeight)
+		_, err := b.cfg.Graph.DisconnectBlockAtHeight(
+			context.TODO(), pruneHeight,
+		)
 		if err != nil {
 			return err
 		}
@@ -687,7 +689,7 @@ func (b *Builder) networkHandler() {
 			// Update the channel graph to reflect that this block
 			// was disconnected.
 			_, err := b.cfg.Graph.DisconnectBlockAtHeight(
-				blockHeight,
+				context.TODO(), blockHeight,
 			)
 			if err != nil {
 				log.Errorf("unable to prune graph with stale "+

@@ -905,7 +905,7 @@ func TestDisconnectBlockAtHeight(t *testing.T) {
 
 	// Call DisconnectBlockAtHeight, which should prune every channel
 	// that has a funding height of 'height' or greater.
-	removed, err := graph.DisconnectBlockAtHeight(uint32(height))
+	removed, err := graph.DisconnectBlockAtHeight(ctx, height)
 	require.NoError(t, err)
 	assertNoEdge(t, graph, edgeInfo.ChannelID)
 	assertNoEdge(t, graph, edgeInfo2.ChannelID)
@@ -3437,7 +3437,7 @@ func TestStressTestChannelGraphAPI(t *testing.T) {
 			name: "DisconnectBlockAtHeight",
 			fn: func() error {
 				_, err := graph.DisconnectBlockAtHeight(
-					newBlockHeight(),
+					ctx, newBlockHeight(),
 				)
 
 				return err

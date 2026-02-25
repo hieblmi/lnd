@@ -419,10 +419,10 @@ func (c *ChannelGraph) DeleteChannelEdges(ctx context.Context,
 // set to the last prune height valid for the remaining chain.
 // Channels that were removed from the graph resulting from the
 // disconnected block are returned.
-func (c *ChannelGraph) DisconnectBlockAtHeight(height uint32) (
-	[]*models.ChannelEdgeInfo, error) {
+func (c *ChannelGraph) DisconnectBlockAtHeight(ctx context.Context,
+	height uint32) ([]*models.ChannelEdgeInfo, error) {
 
-	edges, err := c.db.DisconnectBlockAtHeight(height)
+	edges, err := c.db.DisconnectBlockAtHeight(ctx, height)
 	if err != nil {
 		return nil, err
 	}
