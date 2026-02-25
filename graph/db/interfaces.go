@@ -383,7 +383,7 @@ type Store interface { //nolint:interfacebloat
 	// has been used to prune channels in the graph. Knowing the "prune tip"
 	// allows callers to tell if the graph is currently in sync with the
 	// current best known UTXO state.
-	PruneTip() (*chainhash.Hash, uint32, error)
+	PruneTip(ctx context.Context) (*chainhash.Hash, uint32, error)
 
 	// PruneGraphNodes is a garbage collection method which attempts to
 	// prune out any nodes from the channel graph that are currently

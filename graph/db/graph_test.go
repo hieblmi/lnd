@@ -940,7 +940,7 @@ func TestDisconnectBlockAtHeight(t *testing.T) {
 
 	// PruneTip should be set to the blockHash we specified for the block
 	// at height 155.
-	hash, h, err := graph.PruneTip()
+	hash, h, err := graph.PruneTip(ctx)
 	require.NoError(t, err, "unable to get prune tip")
 	require.True(t, blockHash.IsEqual(hash))
 	require.Equal(t, h, height-1)
@@ -2122,7 +2122,7 @@ func fillTestGraph(t testing.TB, graph *ChannelGraph, numNodes,
 func assertPruneTip(t *testing.T, graph *ChannelGraph,
 	blockHash *chainhash.Hash, blockHeight uint32) {
 
-	pruneHash, pruneHeight, err := graph.PruneTip()
+	pruneHash, pruneHeight, err := graph.PruneTip(t.Context())
 	require.NoError(t, err)
 	require.Equal(t, blockHash[:], pruneHash[:])
 	require.Equal(t, blockHeight, pruneHeight)

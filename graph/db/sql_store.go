@@ -3049,9 +3049,10 @@ func (s *SQLStore) ChannelView(ctx context.Context) ([]EdgePoint, error) {
 // state.
 //
 // NOTE: part of the Store interface.
-func (s *SQLStore) PruneTip() (*chainhash.Hash, uint32, error) {
+func (s *SQLStore) PruneTip(ctx context.Context) (*chainhash.Hash, uint32,
+	error) {
+
 	var (
-		ctx       = context.TODO()
 		tipHash   chainhash.Hash
 		tipHeight uint32
 	)

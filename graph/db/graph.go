@@ -789,8 +789,10 @@ func (c *ChannelGraph) SetSourceNode(ctx context.Context,
 }
 
 // PruneTip returns the block height and hash of the latest pruning block.
-func (c *ChannelGraph) PruneTip() (*chainhash.Hash, uint32, error) {
-	return c.db.PruneTip()
+func (c *ChannelGraph) PruneTip(ctx context.Context) (*chainhash.Hash,
+	uint32, error) {
+
+	return c.db.PruneTip(ctx)
 }
 
 // VersionedGraph is a wrapper around ChannelGraph that will call underlying
