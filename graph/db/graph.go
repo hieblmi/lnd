@@ -772,8 +772,10 @@ func (c *ChannelGraph) NumZombies(ctx context.Context) (uint64, error) {
 }
 
 // PutClosedScid stores a SCID for a closed channel in the database.
-func (c *ChannelGraph) PutClosedScid(scid lnwire.ShortChannelID) error {
-	return c.db.PutClosedScid(scid)
+func (c *ChannelGraph) PutClosedScid(ctx context.Context,
+	scid lnwire.ShortChannelID) error {
+
+	return c.db.PutClosedScid(ctx, scid)
 }
 
 // IsClosedScid checks whether a channel identified by the scid is closed.

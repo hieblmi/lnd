@@ -348,7 +348,7 @@ type Store interface { //nolint:interfacebloat
 	// PutClosedScid stores a SCID for a closed channel in the database.
 	// This is so that we can ignore channel announcements that we know to
 	// be closed without having to validate them and fetch a block.
-	PutClosedScid(scid lnwire.ShortChannelID) error
+	PutClosedScid(ctx context.Context, scid lnwire.ShortChannelID) error
 
 	// IsClosedScid checks whether a channel identified by the passed in
 	// scid is closed. This helps avoid having to perform expensive

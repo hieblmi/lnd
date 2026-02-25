@@ -2877,7 +2877,9 @@ func (d *AuthenticatedGossiper) handleChanAnnouncement(ctx context.Context,
 				// expensive validation checks on it again.
 				// TODO: Populate the ScidCloser by using closed
 				// channel notifications.
-				dbErr := d.cfg.ScidCloser.PutClosedScid(scid)
+				dbErr := d.cfg.ScidCloser.PutClosedScid(
+					ctx, scid,
+				)
 				if dbErr != nil {
 					log.Errorf("failed to mark scid(%v) "+
 						"as closed: %v", scid, dbErr)

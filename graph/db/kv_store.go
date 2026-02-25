@@ -4437,7 +4437,9 @@ func (c *KVStore) NumZombies(_ context.Context) (uint64, error) {
 // PutClosedScid stores a SCID for a closed channel in the database. This is so
 // that we can ignore channel announcements that we know to be closed without
 // having to validate them and fetch a block.
-func (c *KVStore) PutClosedScid(scid lnwire.ShortChannelID) error {
+func (c *KVStore) PutClosedScid(_ context.Context,
+	scid lnwire.ShortChannelID) error {
+
 	return kvdb.Update(c.db, func(tx kvdb.RwTx) error {
 		closedScids, err := tx.CreateTopLevelBucket(closedScidBucket)
 		if err != nil {

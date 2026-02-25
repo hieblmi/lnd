@@ -5092,7 +5092,7 @@ func TestClosedScid(t *testing.T) {
 
 	// After we call PutClosedScid, the call to IsClosedScid should return
 	// true.
-	err = graph.PutClosedScid(scid)
+	err = graph.PutClosedScid(t.Context(), scid)
 	require.Nil(t, err)
 
 	exists, err = graph.IsClosedScid(scid)

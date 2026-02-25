@@ -1,6 +1,7 @@
 package discovery
 
 import (
+	"context"
 	"errors"
 	"math"
 	"sync"
@@ -55,7 +56,7 @@ type ClosedChannelTracker interface {
 type GraphCloser interface {
 	// PutClosedScid marks a channel as closed so that we won't validate
 	// channel announcements for it again.
-	PutClosedScid(lnwire.ShortChannelID) error
+	PutClosedScid(context.Context, lnwire.ShortChannelID) error
 
 	// IsClosedScid checks if a short channel id is closed.
 	IsClosedScid(lnwire.ShortChannelID) (bool, error)
@@ -88,8 +89,10 @@ func NewScidCloserMan(graph GraphCloser,
 
 // PutClosedScid marks scid as closed so the gossiper can ignore this channel
 // in the future.
-func (s *ScidCloserMan) PutClosedScid(scid lnwire.ShortChannelID) error {
-	return s.graph.PutClosedScid(scid)
+func (s *ScidCloserMan) PutClosedScid(ctx context.Context,
+	scid lnwire.ShortChannelID) error {
+
+	return s.graph.PutClosedScid(ctx, scid)
 }
 
 // IsClosedScid checks whether scid is closed so that the gossiper can ignore

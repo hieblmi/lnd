@@ -3271,9 +3271,10 @@ func (s *SQLStore) AddEdgeProof(ctx context.Context,
 // having to validate them and fetch a block.
 //
 // NOTE: part of the Store interface.
-func (s *SQLStore) PutClosedScid(scid lnwire.ShortChannelID) error {
+func (s *SQLStore) PutClosedScid(ctx context.Context,
+	scid lnwire.ShortChannelID) error {
+
 	var (
-		ctx     = context.TODO()
 		chanIDB = channelIDToBytes(scid.ToUint64())
 	)
 
