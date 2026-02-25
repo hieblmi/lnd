@@ -471,9 +471,7 @@ func TestEdgeUpdateNotification(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	if err := ctx.builder.AddEdge(ctxb, edge); err != nil {
-		t.Fatalf("unable to add edge: %v", err)
-	}
+	require.NoError(t, ctx.builder.AddEdge(ctxb, edge))
 
 	// With the channel edge now in place, we'll subscribe for topology
 	// notifications.
@@ -490,56 +488,28 @@ func TestEdgeUpdateNotification(t *testing.T) {
 	require.NoError(t, err, "unable to create a random chan policy")
 	edge2.ChannelFlags = 1
 
-	if err := ctx.builder.UpdateEdge(ctxb, edge1); err != nil {
-		t.Fatalf("unable to add edge update: %v", err)
-	}
-	if err := ctx.builder.UpdateEdge(ctxb, edge2); err != nil {
-		t.Fatalf("unable to add edge update: %v", err)
-	}
+	require.NoError(t, ctx.builder.UpdateEdge(ctxb, edge1))
+	require.NoError(t, ctx.builder.UpdateEdge(ctxb, edge2))
 
 	assertEdgeCorrect := func(t *testing.T,
 		edgeUpdate *graphdb.ChannelEdgeUpdate,
 		edgeAnn *models.ChannelEdgePolicy) {
 
-		if edgeUpdate.ChanID != edgeAnn.ChannelID {
-			t.Fatalf("channel ID of edge doesn't match: "+
-				"expected %v, got %v", chanID.ToUint64(), edgeUpdate.ChanID)
-		}
-		if edgeUpdate.ChanPoint != *chanPoint {
-			t.Fatalf("channel don't match: expected %v, got %v",
-				chanPoint, edgeUpdate.ChanPoint)
-		}
+		require.Equal(t, edgeAnn.ChannelID, edgeUpdate.ChanID)
+		require.Equal(t, *chanPoint, edgeUpdate.ChanPoint)
 		// TODO(roasbeef): this is a hack, needs to be removed
 		// after commitment fees are dynamic.
-		if edgeUpdate.Capacity != chanValue {
-			t.Fatalf("capacity of edge doesn't match: "+
-				"expected %v, got %v", chanValue, edgeUpdate.Capacity)
-		}
-		if edgeUpdate.MinHTLC != edgeAnn.MinHTLC {
-			t.Fatalf("min HTLC of edge doesn't match: "+
-				"expected %v, got %v", edgeAnn.MinHTLC,
-				edgeUpdate.MinHTLC)
-		}
-		if edgeUpdate.MaxHTLC != edgeAnn.MaxHTLC {
-			t.Fatalf("max HTLC of edge doesn't match: "+
-				"expected %v, got %v", edgeAnn.MaxHTLC,
-				edgeUpdate.MaxHTLC)
-		}
-		if edgeUpdate.BaseFee != edgeAnn.FeeBaseMSat {
-			t.Fatalf("base fee of edge doesn't match: "+
-				"expected %v, got %v", edgeAnn.FeeBaseMSat,
-				edgeUpdate.BaseFee)
-		}
-		if edgeUpdate.FeeRate != edgeAnn.FeeProportionalMillionths {
-			t.Fatalf("fee rate of edge doesn't match: "+
-				"expected %v, got %v", edgeAnn.FeeProportionalMillionths,
-				edgeUpdate.FeeRate)
-		}
-		if edgeUpdate.TimeLockDelta != edgeAnn.TimeLockDelta {
-			t.Fatalf("time lock delta of edge doesn't match: "+
-				"expected %v, got %v", edgeAnn.TimeLockDelta,
-				edgeUpdate.TimeLockDelta)
-		}
+		require.EqualValues(t, chanValue, edgeUpdate.Capacity)
+		require.Equal(t, edgeAnn.MinHTLC, edgeUpdate.MinHTLC)
+		require.Equal(t, edgeAnn.MaxHTLC, edgeUpdate.MaxHTLC)
+		require.Equal(t, edgeAnn.FeeBaseMSat, edgeUpdate.BaseFee)
+		require.Equal(
+			t, edgeAnn.FeeProportionalMillionths,
+			edgeUpdate.FeeRate,
+		)
+		require.Equal(
+			t, edgeAnn.TimeLockDelta, edgeUpdate.TimeLockDelta,
+		)
 		require.Equal(
 			t, edgeAnn.ExtraOpaqueData, edgeUpdate.ExtraOpaqueData,
 		)
@@ -563,10 +533,7 @@ func TestEdgeUpdateNotification(t *testing.T) {
 		case ntfn := <-ntfnClient.TopologyChanges:
 			// For each processed announcement we should only receive a
 			// single announcement in a batch.
-			if len(ntfn.ChannelEdgeUpdates) != 1 {
-				t.Fatalf("expected 1 notification, instead have %v",
-					len(ntfn.ChannelEdgeUpdates))
-			}
+			require.Len(t, ntfn.ChannelEdgeUpdates, 1)
 
 			edgeUpdate := ntfn.ChannelEdgeUpdates[0]
 			nodeVertex := route.NewVertex(edgeUpdate.AdvertisingNode)
@@ -669,9 +636,7 @@ func TestNodeUpdateNotification(t *testing.T) {
 
 	// Adding the edge will add the nodes to the graph, but with no info
 	// except the pubkey known.
-	if err := ctx.builder.AddEdge(ctxb, edge); err != nil {
-		t.Fatalf("unable to add edge: %v", err)
-	}
+	require.NoError(t, ctx.builder.AddEdge(ctxb, edge))
 
 	// Create a new client to receive notifications.
 	ntfnClient, err := ctx.graph.SubscribeTopology()
@@ -679,12 +644,8 @@ func TestNodeUpdateNotification(t *testing.T) {
 
 	// Change network topology by adding the updated info for the two nodes
 	// to the channel router.
-	if err := ctx.builder.AddNode(ctxb, node1); err != nil {
-		t.Fatalf("unable to add node: %v", err)
-	}
-	if err := ctx.builder.AddNode(ctxb, node2); err != nil {
-		t.Fatalf("unable to add node: %v", err)
-	}
+	require.NoError(t, ctx.builder.AddNode(ctxb, node1))
+	require.NoError(t, ctx.builder.AddNode(ctxb, node2))
 
 	assertNodeNtfnCorrect := func(t *testing.T, ann *models.Node,
 		nodeUpdate *graphdb.NetworkNodeUpdate) {
@@ -693,15 +654,8 @@ func TestNodeUpdateNotification(t *testing.T) {
 
 		// The notification received should directly map the
 		// announcement originally sent.
-		if nodeUpdate.Addresses[0] != ann.Addresses[0] {
-			t.Fatalf("node address doesn't match: expected %v, got %v",
-				nodeUpdate.Addresses[0], ann.Addresses[0])
-		}
-		if !nodeUpdate.IdentityKey.IsEqual(nodeKey) {
-			t.Fatalf("node identity keys don't match: expected %x, "+
-				"got %x", nodeKey.SerializeCompressed(),
-				nodeUpdate.IdentityKey.SerializeCompressed())
-		}
+		require.Equal(t, ann.Addresses[0], nodeUpdate.Addresses[0])
+		require.True(t, nodeUpdate.IdentityKey.IsEqual(nodeKey))
 
 		featuresBuf := new(bytes.Buffer)
 		require.NoError(t, nodeUpdate.Features.Encode(featuresBuf))
@@ -733,10 +687,7 @@ func TestNodeUpdateNotification(t *testing.T) {
 		case ntfn := <-ntfnClient.TopologyChanges:
 			// For each processed announcement we should only receive a
 			// single announcement in a batch.
-			if len(ntfn.NodeUpdates) != 1 {
-				t.Fatalf("expected 1 notification, instead have %v",
-					len(ntfn.NodeUpdates))
-			}
+			require.Len(t, ntfn.NodeUpdates, 1)
 
 			nodeUpdate := ntfn.NodeUpdates[0]
 			nodeVertex := route.NewVertex(nodeUpdate.IdentityKey)
@@ -774,9 +725,7 @@ func TestNodeUpdateNotification(t *testing.T) {
 	nodeUpdateAnn.LastUpdate = node1.LastUpdate.Add(time.Second)
 
 	// Add new node topology update to the channel router.
-	if err := ctx.builder.AddNode(ctxb, &nodeUpdateAnn); err != nil {
-		t.Fatalf("unable to add node: %v", err)
-	}
+	require.NoError(t, ctx.builder.AddNode(ctxb, &nodeUpdateAnn))
 
 	// Once again a notification should be received reflecting the up to
 	// date node announcement.
@@ -784,10 +733,7 @@ func TestNodeUpdateNotification(t *testing.T) {
 	case ntfn := <-ntfnClient.TopologyChanges:
 		// For each processed announcement we should only receive a
 		// single announcement in a batch.
-		if len(ntfn.NodeUpdates) != 1 {
-			t.Fatalf("expected 1 notification, instead have %v",
-				len(ntfn.NodeUpdates))
-		}
+		require.Len(t, ntfn.NodeUpdates, 1)
 
 		nodeUpdate := ntfn.NodeUpdates[0]
 		assertNodeNtfnCorrect(t, &nodeUpdateAnn, nodeUpdate)
@@ -859,17 +805,11 @@ func TestNotificationCancellation(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	if err := ctx.builder.AddEdge(ctxb, edge); err != nil {
-		t.Fatalf("unable to add edge: %v", err)
-	}
+	require.NoError(t, ctx.builder.AddEdge(ctxb, edge))
 
-	if err := ctx.builder.AddNode(ctxb, node1); err != nil {
-		t.Fatalf("unable to add node: %v", err)
-	}
+	require.NoError(t, ctx.builder.AddNode(ctxb, node1))
 
-	if err := ctx.builder.AddNode(ctxb, node2); err != nil {
-		t.Fatalf("unable to add node: %v", err)
-	}
+	require.NoError(t, ctx.builder.AddNode(ctxb, node2))
 
 	select {
 	// The notifications shouldn't be sent, however, the channel should be
@@ -940,9 +880,7 @@ func TestChannelCloseNotification(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	if err := ctx.builder.AddEdge(ctxb, edge); err != nil {
-		t.Fatalf("unable to add edge: %v", err)
-	}
+	require.NoError(t, ctx.builder.AddEdge(ctxb, edge))
 
 	// With the channel edge now in place, we'll subscribe for topology
 	// notifications.
@@ -975,35 +913,19 @@ func TestChannelCloseNotification(t *testing.T) {
 		// We should have exactly a single notification for the channel
 		// "closed" above.
 		closedChans := ntfn.ClosedChannels
-		if len(closedChans) == 0 {
-			t.Fatal("close channel ntfn not populated")
-		} else if len(closedChans) != 1 {
-			t.Fatalf("only one should have been detected as closed, "+
-				"instead %v were", len(closedChans))
-		}
+		require.NotEmpty(t, closedChans)
+		require.Len(t, closedChans, 1)
 
 		// Ensure that the notification we received includes the proper
 		// update the for the channel that was closed in the generated
 		// block.
 		closedChan := closedChans[0]
-		if closedChan.ChanID != chanID.ToUint64() {
-			t.Fatalf("channel ID of closed channel doesn't match: "+
-				"expected %v, got %v", chanID.ToUint64(), closedChan.ChanID)
-		}
+		require.Equal(t, chanID.ToUint64(), closedChan.ChanID)
 		// TODO(roasbeef): this is a hack, needs to be removed
 		// after commitment fees are dynamic.
-		if closedChan.Capacity != chanValue {
-			t.Fatalf("capacity of closed channel doesn't match: "+
-				"expected %v, got %v", chanValue, closedChan.Capacity)
-		}
-		if closedChan.ClosedHeight != blockHeight {
-			t.Fatalf("close height of closed channel doesn't match: "+
-				"expected %v, got %v", blockHeight, closedChan.ClosedHeight)
-		}
-		if closedChan.ChanPoint != *chanUtxo {
-			t.Fatalf("chan point of closed channel doesn't match: "+
-				"expected %v, got %v", chanUtxo, closedChan.ChanPoint)
-		}
+		require.EqualValues(t, chanValue, closedChan.Capacity)
+		require.Equal(t, blockHeight, closedChan.ClosedHeight)
+		require.Equal(t, *chanUtxo, closedChan.ChanPoint)
 
 	case <-time.After(time.Second * 5):
 		t.Fatal("notification not sent")
