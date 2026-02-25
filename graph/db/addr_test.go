@@ -3,7 +3,6 @@ package graphdb
 import (
 	"bytes"
 	"net"
-	"strings"
 	"testing"
 
 	"github.com/lightningnetwork/lnd/lnwire"
@@ -148,29 +147,15 @@ func TestAddrSerialization(t *testing.T) {
 	var b bytes.Buffer
 	for _, test := range addrTests {
 		err := SerializeAddr(&b, test.expAddr)
-		switch {
-		case err == nil && test.serErr != "":
-			t.Fatalf("expected serialization err for addr %v",
-				test.expAddr)
-
-		case err != nil && test.serErr == "":
-			t.Fatalf("unexpected serialization err for addr %v: %v",
-				test.expAddr, err)
-
-		case err != nil && !strings.Contains(err.Error(), test.serErr):
-			t.Fatalf("unexpected serialization err for addr %v, "+
-				"want: %v, got %v", test.expAddr, test.serErr,
-				err)
-
-		case err != nil:
+		if test.serErr != "" {
+			require.Error(t, err)
+			require.ErrorContains(t, err, test.serErr)
 			continue
 		}
+		require.NoError(t, err)
 
 		addr, err := DeserializeAddr(&b)
-		if err != nil {
-			t.Fatalf("unable to deserialize address: %v", err)
-		}
-
+		require.NoError(t, err)
 		require.Equal(t, test.expAddr, addr)
 	}
 }
