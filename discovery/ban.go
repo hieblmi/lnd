@@ -59,7 +59,7 @@ type GraphCloser interface {
 	PutClosedScid(context.Context, lnwire.ShortChannelID) error
 
 	// IsClosedScid checks if a short channel id is closed.
-	IsClosedScid(lnwire.ShortChannelID) (bool, error)
+	IsClosedScid(context.Context, lnwire.ShortChannelID) (bool, error)
 }
 
 // NodeInfoInquirier handles queries relating to specific nodes and channels
@@ -97,10 +97,10 @@ func (s *ScidCloserMan) PutClosedScid(ctx context.Context,
 
 // IsClosedScid checks whether scid is closed so that the gossiper can ignore
 // it.
-func (s *ScidCloserMan) IsClosedScid(scid lnwire.ShortChannelID) (bool,
-	error) {
+func (s *ScidCloserMan) IsClosedScid(ctx context.Context,
+	scid lnwire.ShortChannelID) (bool, error) {
 
-	return s.graph.IsClosedScid(scid)
+	return s.graph.IsClosedScid(ctx, scid)
 }
 
 // IsChannelPeer checks whether we have a channel with the peer.

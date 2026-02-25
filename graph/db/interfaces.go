@@ -353,7 +353,8 @@ type Store interface { //nolint:interfacebloat
 	// IsClosedScid checks whether a channel identified by the passed in
 	// scid is closed. This helps avoid having to perform expensive
 	// validation checks.
-	IsClosedScid(scid lnwire.ShortChannelID) (bool, error)
+	IsClosedScid(ctx context.Context,
+		scid lnwire.ShortChannelID) (bool, error)
 
 	// UpdateEdgePolicy updates the edge routing policy for a single
 	// directed edge within the database for the referenced channel. The

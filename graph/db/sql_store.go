@@ -3287,9 +3287,10 @@ func (s *SQLStore) PutClosedScid(ctx context.Context,
 // closed. This helps avoid having to perform expensive validation checks.
 //
 // NOTE: part of the Store interface.
-func (s *SQLStore) IsClosedScid(scid lnwire.ShortChannelID) (bool, error) {
+func (s *SQLStore) IsClosedScid(ctx context.Context,
+	scid lnwire.ShortChannelID) (bool, error) {
+
 	var (
-		ctx      = context.TODO()
 		isClosed bool
 		chanIDB  = channelIDToBytes(scid.ToUint64())
 	)

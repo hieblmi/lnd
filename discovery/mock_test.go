@@ -187,8 +187,8 @@ func (m *mockScidCloser) PutClosedScid(_ context.Context,
 	return nil
 }
 
-func (m *mockScidCloser) IsClosedScid(scid lnwire.ShortChannelID) (bool,
-	error) {
+func (m *mockScidCloser) IsClosedScid(_ context.Context,
+	scid lnwire.ShortChannelID) (bool, error) {
 
 	m.Lock()
 	defer m.Unlock()

@@ -5086,7 +5086,7 @@ func TestClosedScid(t *testing.T) {
 	scid := lnwire.ShortChannelID{}
 
 	// The scid should not exist in the closedScidBucket.
-	exists, err := graph.IsClosedScid(scid)
+	exists, err := graph.IsClosedScid(t.Context(), scid)
 	require.Nil(t, err)
 	require.False(t, exists)
 
@@ -5095,7 +5095,7 @@ func TestClosedScid(t *testing.T) {
 	err = graph.PutClosedScid(t.Context(), scid)
 	require.Nil(t, err)
 
-	exists, err = graph.IsClosedScid(scid)
+	exists, err = graph.IsClosedScid(t.Context(), scid)
 	require.Nil(t, err)
 	require.True(t, exists)
 }

@@ -4456,7 +4456,9 @@ func (c *KVStore) PutClosedScid(_ context.Context,
 // IsClosedScid checks whether a channel identified by the passed in scid is
 // closed. This helps avoid having to perform expensive validation checks.
 // TODO: Add an LRU cache to cut down on disc reads.
-func (c *KVStore) IsClosedScid(scid lnwire.ShortChannelID) (bool, error) {
+func (c *KVStore) IsClosedScid(_ context.Context,
+	scid lnwire.ShortChannelID) (bool, error) {
+
 	var isClosed bool
 	err := kvdb.View(c.db, func(tx kvdb.RTx) error {
 		closedScids := tx.ReadBucket(closedScidBucket)

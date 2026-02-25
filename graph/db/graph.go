@@ -779,8 +779,10 @@ func (c *ChannelGraph) PutClosedScid(ctx context.Context,
 }
 
 // IsClosedScid checks whether a channel identified by the scid is closed.
-func (c *ChannelGraph) IsClosedScid(scid lnwire.ShortChannelID) (bool, error) {
-	return c.db.IsClosedScid(scid)
+func (c *ChannelGraph) IsClosedScid(ctx context.Context,
+	scid lnwire.ShortChannelID) (bool, error) {
+
+	return c.db.IsClosedScid(ctx, scid)
 }
 
 // SetSourceNode sets the source node within the graph database.
