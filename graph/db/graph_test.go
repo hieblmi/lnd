@@ -693,7 +693,9 @@ func testEdgeInsertionDeletion(t *testing.T, v lnwire.GossipVersion) {
 	}
 
 	// Also verify fetching by outpoint returns the same data.
-	dbEdge2, _, _, err := graph.FetchChannelEdgesByOutpoint(&outpoint)
+	dbEdge2, _, _, err := graph.FetchChannelEdgesByOutpoint(
+		ctx, &outpoint,
+	)
 	require.NoError(t, err)
 	require.Equal(t, dbEdge.ChannelID, dbEdge2.ChannelID)
 
@@ -706,7 +708,7 @@ func testEdgeInsertionDeletion(t *testing.T, v lnwire.GossipVersion) {
 
 	// Ensure that any query attempts to lookup the delete channel edge are
 	// properly deleted.
-	_, _, _, err = graph.FetchChannelEdgesByOutpoint(&outpoint)
+	_, _, _, err = graph.FetchChannelEdgesByOutpoint(ctx, &outpoint)
 	require.ErrorIs(t, err, ErrEdgeNotFound)
 
 	// Assert that if the edge is a zombie, then FetchChannelEdgesByID
@@ -1206,7 +1208,7 @@ func testEdgeInfoUpdates(t *testing.T, v lnwire.GossipVersion) {
 	// Next, attempt to query the channel edges according to the outpoint
 	// of the channel.
 	dbEdgeInfo, dbEdge1, dbEdge2, err = graph.FetchChannelEdgesByOutpoint(
-		&outpoint,
+		ctx, &outpoint,
 	)
 	require.NoError(t, err, "unable to fetch channel by ID")
 	compareEdgePolicies(t, dbEdge1, edge1)

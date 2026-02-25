@@ -296,7 +296,8 @@ type Store interface { //nolint:interfacebloat
 	// houses the general information for the channel itself is returned as
 	// well as two structs that contain the routing policies for the channel
 	// in either direction.
-	FetchChannelEdgesByOutpoint(v lnwire.GossipVersion, op *wire.OutPoint) (
+	FetchChannelEdgesByOutpoint(ctx context.Context,
+		v lnwire.GossipVersion, op *wire.OutPoint) (
 		*models.ChannelEdgeInfo, *models.ChannelEdgePolicy,
 		*models.ChannelEdgePolicy, error)
 

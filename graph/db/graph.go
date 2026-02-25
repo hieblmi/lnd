@@ -729,12 +729,13 @@ func (c *ChannelGraph) FetchChanInfos(v lnwire.GossipVersion,
 
 // FetchChannelEdgesByOutpoint attempts to lookup directed edges by funding
 // outpoint.
-func (c *ChannelGraph) FetchChannelEdgesByOutpoint(op *wire.OutPoint) (
+func (c *ChannelGraph) FetchChannelEdgesByOutpoint(ctx context.Context,
+	op *wire.OutPoint) (
 	*models.ChannelEdgeInfo, *models.ChannelEdgePolicy,
 	*models.ChannelEdgePolicy, error) {
 
 	return c.db.FetchChannelEdgesByOutpoint(
-		lnwire.GossipVersion1, op,
+		ctx, lnwire.GossipVersion1, op,
 	)
 }
 
@@ -823,11 +824,12 @@ func (c *VersionedGraph) FetchChannelEdgesByID(ctx context.Context,
 
 // FetchChannelEdgesByOutpoint attempts to lookup directed edges by funding
 // outpoint.
-func (c *VersionedGraph) FetchChannelEdgesByOutpoint(op *wire.OutPoint) (
+func (c *VersionedGraph) FetchChannelEdgesByOutpoint(ctx context.Context,
+	op *wire.OutPoint) (
 	*models.ChannelEdgeInfo, *models.ChannelEdgePolicy,
 	*models.ChannelEdgePolicy, error) {
 
-	return c.db.FetchChannelEdgesByOutpoint(c.v, op)
+	return c.db.FetchChannelEdgesByOutpoint(ctx, c.v, op)
 }
 
 // IsZombieEdge returns whether the edge is considered zombie for this version.

@@ -2167,12 +2167,12 @@ func (s *SQLStore) FetchChannelEdgesByID(ctx context.Context,
 // contain the routing policies for the channel in either direction.
 //
 // NOTE: part of the Store interface.
-func (s *SQLStore) FetchChannelEdgesByOutpoint(v lnwire.GossipVersion,
-	op *wire.OutPoint) (*models.ChannelEdgeInfo, *models.ChannelEdgePolicy,
+func (s *SQLStore) FetchChannelEdgesByOutpoint(ctx context.Context,
+	v lnwire.GossipVersion, op *wire.OutPoint) (
+	*models.ChannelEdgeInfo, *models.ChannelEdgePolicy,
 	*models.ChannelEdgePolicy, error) {
 
 	var (
-		ctx              = context.TODO()
 		edge             *models.ChannelEdgeInfo
 		policy1, policy2 *models.ChannelEdgePolicy
 	)
