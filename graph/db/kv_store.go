@@ -1427,16 +1427,14 @@ func (c *KVStore) HasV1ChannelEdge(_ context.Context,
 // passed channel ID and gossip version, and false otherwise. If it is not
 // found, then the zombie index is checked and its result is returned as the
 // second boolean.
-func (c *KVStore) HasChannelEdge(v lnwire.GossipVersion,
+func (c *KVStore) HasChannelEdge(ctx context.Context, v lnwire.GossipVersion,
 	chanID uint64) (bool, bool, error) {
 
 	if v != lnwire.GossipVersion1 {
 		return false, false, ErrVersionNotSupportedForKVDB
 	}
 
-	_, _, exists, isZombie, err := c.HasV1ChannelEdge(
-		context.TODO(), chanID,
-	)
+	_, _, exists, isZombie, err := c.HasV1ChannelEdge(ctx, chanID)
 
 	return exists, isZombie, err
 }

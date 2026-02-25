@@ -918,13 +918,13 @@ func TestDisconnectBlockAtHeight(t *testing.T) {
 
 	// The two first edges should be removed from the db.
 	has, isZombie, err := graph.HasChannelEdge(
-		lnwire.GossipVersion1, edgeInfo.ChannelID,
+		ctx, lnwire.GossipVersion1, edgeInfo.ChannelID,
 	)
 	require.NoError(t, err, "unable to query for edge")
 	require.False(t, has)
 	require.False(t, isZombie)
 	has, isZombie, err = graph.HasChannelEdge(
-		lnwire.GossipVersion1, edgeInfo2.ChannelID,
+		ctx, lnwire.GossipVersion1, edgeInfo2.ChannelID,
 	)
 	require.NoError(t, err, "unable to query for edge")
 	require.False(t, has)
@@ -932,7 +932,7 @@ func TestDisconnectBlockAtHeight(t *testing.T) {
 
 	// Edge 3 should not be removed.
 	has, isZombie, err = graph.HasChannelEdge(
-		lnwire.GossipVersion1, edgeInfo3.ChannelID,
+		ctx, lnwire.GossipVersion1, edgeInfo3.ChannelID,
 	)
 	require.NoError(t, err, "unable to query for edge")
 	require.True(t, has)
@@ -1184,7 +1184,7 @@ func testEdgeInfoUpdates(t *testing.T, v lnwire.GossipVersion) {
 
 	// Check for existence of the edge within the database, it should be
 	// found.
-	found, isZombie, err := graph.HasChannelEdge(chanID)
+	found, isZombie, err := graph.HasChannelEdge(ctx, chanID)
 	require.NoError(t, err, "unable to query for edge")
 	require.True(t, found)
 	require.False(t, isZombie)
@@ -3360,7 +3360,7 @@ func TestStressTestChannelGraphAPI(t *testing.T) {
 				}
 
 				_, _, err := graph.HasChannelEdge(
-					lnwire.GossipVersion1,
+					ctx, lnwire.GossipVersion1,
 					channel.id.ToUint64(),
 				)
 

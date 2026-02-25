@@ -681,10 +681,10 @@ func (c *ChannelGraph) HasV1ChannelEdge(ctx context.Context,
 }
 
 // HasChannelEdge returns true if the database knows of a channel edge.
-func (c *ChannelGraph) HasChannelEdge(v lnwire.GossipVersion,
-	chanID uint64) (bool, bool, error) {
+func (c *ChannelGraph) HasChannelEdge(ctx context.Context,
+	v lnwire.GossipVersion, chanID uint64) (bool, bool, error) {
 
-	return c.db.HasChannelEdge(v, chanID)
+	return c.db.HasChannelEdge(ctx, v, chanID)
 }
 
 // AddEdgeProof sets the proof of an existing edge in the graph database.
@@ -919,8 +919,10 @@ func (c *VersionedGraph) DeleteChannelEdges(ctx context.Context,
 // passed channel ID and this graph's gossip version, and false otherwise. If it
 // is not found, then the zombie index is checked and its result is returned as
 // the second boolean.
-func (c *VersionedGraph) HasChannelEdge(chanID uint64) (bool, bool, error) {
-	return c.db.HasChannelEdge(c.v, chanID)
+func (c *VersionedGraph) HasChannelEdge(ctx context.Context,
+	chanID uint64) (bool, bool, error) {
+
+	return c.db.HasChannelEdge(ctx, c.v, chanID)
 }
 
 // ForEachSourceNodeChannel iterates through all channels of the source node.

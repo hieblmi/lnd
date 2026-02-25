@@ -1050,7 +1050,7 @@ func (b *Builder) addEdge(ctx context.Context, edge *models.ChannelEdgeInfo,
 	// Prior to processing the announcement we first check if we
 	// already know of this channel, if so, then we can exit early.
 	exists, isZombie, err := b.cfg.Graph.HasChannelEdge(
-		edge.Version, edge.ChannelID,
+		ctx, edge.Version, edge.ChannelID,
 	)
 	if err != nil && !errors.Is(err, graphdb.ErrGraphNoEdgesFound) {
 		return fmt.Errorf("unable to check for edge existence: %w",
@@ -1340,7 +1340,7 @@ func (b *Builder) IsPublicNode(node route.Vertex) (bool, error) {
 // NOTE: This method is part of the ChannelGraphSource interface.
 func (b *Builder) IsKnownEdge(chanID lnwire.ShortChannelID) bool {
 	exists, isZombie, _ := b.cfg.Graph.HasChannelEdge(
-		lnwire.GossipVersion1, chanID.ToUint64(),
+		context.TODO(), lnwire.GossipVersion1, chanID.ToUint64(),
 	)
 
 	return exists || isZombie
@@ -1352,7 +1352,7 @@ func (b *Builder) IsKnownEdge(chanID lnwire.ShortChannelID) bool {
 // NOTE: This method is part of the ChannelGraphSource interface.
 func (b *Builder) IsZombieEdge(chanID lnwire.ShortChannelID) (bool, error) {
 	_, isZombie, err := b.cfg.Graph.HasChannelEdge(
-		lnwire.GossipVersion1, chanID.ToUint64(),
+		context.TODO(), lnwire.GossipVersion1, chanID.ToUint64(),
 	)
 
 	return isZombie, err

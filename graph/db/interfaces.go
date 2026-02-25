@@ -218,8 +218,8 @@ type Store interface { //nolint:interfacebloat
 	// with the passed channel ID and gossip version, and false otherwise.
 	// If it is not found, then the zombie index is checked and its result
 	// is returned as the second boolean.
-	HasChannelEdge(v lnwire.GossipVersion, chanID uint64) (bool, bool,
-		error)
+	HasChannelEdge(ctx context.Context, v lnwire.GossipVersion,
+		chanID uint64) (bool, bool, error)
 
 	// DeleteChannelEdges removes edges with the given channel IDs from the
 	// database and marks them as zombies. This ensures that we're unable to

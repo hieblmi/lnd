@@ -2361,16 +2361,14 @@ func (s *SQLStore) HasV1ChannelEdge(ctx context.Context,
 // result is returned as the second boolean.
 //
 // NOTE: part of the Store interface.
-func (s *SQLStore) HasChannelEdge(v lnwire.GossipVersion,
-	chanID uint64) (bool, bool, error) {
+func (s *SQLStore) HasChannelEdge(ctx context.Context,
+	v lnwire.GossipVersion, chanID uint64) (bool, bool, error) {
 
 	if !isKnownGossipVersion(v) {
 		return false, false, fmt.Errorf(
 			"unsupported gossip version: %d", v,
 		)
 	}
-
-	ctx := context.TODO()
 
 	var (
 		exists          bool

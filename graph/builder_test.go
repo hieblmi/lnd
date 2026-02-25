@@ -311,12 +311,12 @@ func TestWakeUpOnStaleBranch(t *testing.T) {
 	require.NoError(t, ctx.builder.AddEdge(ctxb, edge2))
 
 	// Check that the fundingTxs are in the graph db.
-	has, isZombie, err := ctx.graph.HasChannelEdge(chanID1)
+	has, isZombie, err := ctx.graph.HasChannelEdge(t.Context(), chanID1)
 	require.NoError(t, err)
 	require.True(t, has)
 	require.False(t, isZombie)
 
-	has, isZombie, err = ctx.graph.HasChannelEdge(chanID2)
+	has, isZombie, err = ctx.graph.HasChannelEdge(t.Context(), chanID2)
 	require.NoError(t, err)
 	require.True(t, has)
 	require.False(t, isZombie)
@@ -363,12 +363,12 @@ func TestWakeUpOnStaleBranch(t *testing.T) {
 	// The channel with chanID2 should not be in the database anymore,
 	// since it is not confirmed on the longest chain. chanID1 should
 	// still be.
-	has, isZombie, err = ctx.graph.HasChannelEdge(chanID1)
+	has, isZombie, err = ctx.graph.HasChannelEdge(t.Context(), chanID1)
 	require.NoError(t, err)
 	require.True(t, has)
 	require.False(t, isZombie)
 
-	has, isZombie, err = ctx.graph.HasChannelEdge(chanID2)
+	has, isZombie, err = ctx.graph.HasChannelEdge(t.Context(), chanID2)
 	require.NoError(t, err)
 	require.False(t, has)
 	require.False(t, isZombie)
@@ -482,12 +482,12 @@ func TestDisconnectedBlocks(t *testing.T) {
 	require.NoError(t, ctx.builder.AddEdge(ctxb, edge2))
 
 	// Check that the fundingTxs are in the graph db.
-	has, isZombie, err := ctx.graph.HasChannelEdge(chanID1)
+	has, isZombie, err := ctx.graph.HasChannelEdge(t.Context(), chanID1)
 	require.NoError(t, err)
 	require.True(t, has)
 	require.False(t, isZombie)
 
-	has, isZombie, err = ctx.graph.HasChannelEdge(chanID2)
+	has, isZombie, err = ctx.graph.HasChannelEdge(t.Context(), chanID2)
 	require.NoError(t, err)
 	require.True(t, has)
 	require.False(t, isZombie)
@@ -523,12 +523,12 @@ func TestDisconnectedBlocks(t *testing.T) {
 
 	// chanID2 should not be in the database anymore, since it is not
 	// confirmed on the longest chain. chanID1 should still be.
-	has, isZombie, err = ctx.graph.HasChannelEdge(chanID1)
+	has, isZombie, err = ctx.graph.HasChannelEdge(t.Context(), chanID1)
 	require.NoError(t, err)
 	require.True(t, has)
 	require.False(t, isZombie)
 
-	has, isZombie, err = ctx.graph.HasChannelEdge(chanID2)
+	has, isZombie, err = ctx.graph.HasChannelEdge(t.Context(), chanID2)
 	require.NoError(t, err)
 	require.False(t, has)
 	require.False(t, isZombie)
@@ -594,7 +594,7 @@ func TestChansClosedOfflinePruneGraph(t *testing.T) {
 
 	// The router should now be aware of the channel we created above.
 	hasChan, isZombie, err := ctx.graph.HasChannelEdge(
-		chanID1.ToUint64(),
+		t.Context(), chanID1.ToUint64(),
 	)
 	require.NoError(t, err)
 	require.True(t, hasChan)
@@ -662,7 +662,7 @@ func TestChansClosedOfflinePruneGraph(t *testing.T) {
 	// At this point, the channel that was pruned should no longer be known
 	// by the router.
 	hasChan, isZombie, err = ctx.graph.HasChannelEdge(
-		chanID1.ToUint64(),
+		t.Context(), chanID1.ToUint64(),
 	)
 	require.NoError(t, err)
 	require.False(t, hasChan)
@@ -1611,7 +1611,7 @@ func assertChannelsPruned(t *testing.T, graph *graphdb.VersionedGraph,
 	for _, channel := range channels {
 		_, shouldPrune := pruned[channel.ChannelID]
 		exists, isZombie, err := graph.HasChannelEdge(
-			channel.ChannelID,
+			t.Context(), channel.ChannelID,
 		)
 		require.NoError(t, err)
 		if shouldPrune {
