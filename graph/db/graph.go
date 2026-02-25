@@ -217,8 +217,9 @@ func (c *ChannelGraph) populateCache(ctx context.Context) error {
 // Unknown policies are passed into the callback as nil values.
 //
 // NOTE: this is part of the graphdb.NodeTraverser interface.
-func (c *ChannelGraph) ForEachNodeDirectedChannel(node route.Vertex,
-	cb func(channel *DirectedChannel) error, reset func()) error {
+func (c *ChannelGraph) ForEachNodeDirectedChannel(ctx context.Context,
+	node route.Vertex, cb func(channel *DirectedChannel) error,
+	reset func()) error {
 
 	if c.graphCache != nil {
 		return c.graphCache.ForEachChannel(node, cb)
@@ -227,7 +228,9 @@ func (c *ChannelGraph) ForEachNodeDirectedChannel(node route.Vertex,
 	// TODO(elle): once the no-cache path needs to support
 	// pathfinding across gossip versions, this should iterate
 	// across all versions rather than defaulting to v1.
-	return c.db.ForEachNodeDirectedChannel(gossipV1, node, cb, reset)
+	return c.db.ForEachNodeDirectedChannel(
+		ctx, gossipV1, node, cb, reset,
+	)
 }
 
 // FetchNodeFeatures returns the features of the given node. If no features are

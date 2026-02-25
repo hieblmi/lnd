@@ -1006,11 +1006,9 @@ func (s *SQLStore) ForEachNode(ctx context.Context,
 // Unknown policies are passed into the callback as nil values.
 //
 // NOTE: this is part of the graphdb.NodeTraverser interface.
-func (s *SQLStore) ForEachNodeDirectedChannel(v lnwire.GossipVersion,
-	nodePub route.Vertex, cb func(channel *DirectedChannel) error,
-	reset func()) error {
-
-	var ctx = context.TODO()
+func (s *SQLStore) ForEachNodeDirectedChannel(ctx context.Context,
+	v lnwire.GossipVersion, nodePub route.Vertex,
+	cb func(channel *DirectedChannel) error, reset func()) error {
 
 	return s.db.ExecTx(ctx, sqldb.ReadTxOpt(), func(db SQLQueries) error {
 		return forEachNodeDirectedChannel(ctx, db, v, nodePub, cb)
@@ -3375,10 +3373,8 @@ func newSQLNodeTraverser(db SQLQueries,
 //
 // NOTE: Part of the NodeTraverser interface.
 func (s *sqlNodeTraverser) ForEachNodeDirectedChannel(
-	nodePub route.Vertex, cb func(channel *DirectedChannel) error,
-	_ func()) error {
-
-	ctx := context.TODO()
+	ctx context.Context, nodePub route.Vertex,
+	cb func(channel *DirectedChannel) error, _ func()) error {
 
 	return forEachNodeDirectedChannel(
 		ctx, s.db, lnwire.GossipVersion1, nodePub, cb,

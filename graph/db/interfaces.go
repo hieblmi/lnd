@@ -21,7 +21,7 @@ import (
 type NodeTraverser interface {
 	// ForEachNodeDirectedChannel calls the callback for every channel of
 	// the given node.
-	ForEachNodeDirectedChannel(nodePub route.Vertex,
+	ForEachNodeDirectedChannel(ctx context.Context, nodePub route.Vertex,
 		cb func(channel *DirectedChannel) error, reset func()) error
 
 	// FetchNodeFeatures returns the features of the given node.
@@ -34,8 +34,9 @@ type NodeTraverser interface {
 type Store interface { //nolint:interfacebloat
 	// ForEachNodeDirectedChannel calls the callback for every channel of
 	// the given node.
-	ForEachNodeDirectedChannel(v lnwire.GossipVersion, nodePub route.Vertex,
-		cb func(channel *DirectedChannel) error, reset func()) error
+	ForEachNodeDirectedChannel(ctx context.Context, v lnwire.GossipVersion,
+		nodePub route.Vertex, cb func(channel *DirectedChannel) error,
+		reset func()) error
 
 	// FetchNodeFeatures returns the features of the given node.
 	FetchNodeFeatures(ctx context.Context, v lnwire.GossipVersion,

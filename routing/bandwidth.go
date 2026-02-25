@@ -1,6 +1,7 @@
 package routing
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/lightningnetwork/lnd/fn/v2"
@@ -64,7 +65,8 @@ func newBandwidthManager(graph Graph, sourceNode route.Vertex,
 	// First, we'll collect the set of outbound edges from the target
 	// source node and add them to our bandwidth manager's map of channels.
 	err := graph.ForEachNodeDirectedChannel(
-		sourceNode, func(channel *graphdb.DirectedChannel) error {
+		context.TODO(), sourceNode,
+		func(channel *graphdb.DirectedChannel) error {
 			shortID := lnwire.NewShortChanIDFromInt(
 				channel.ChannelID,
 			)

@@ -578,7 +578,7 @@ func getOutgoingBalance(node route.Vertex, outgoingChans map[uint64]struct{},
 
 	// Iterate over all channels of the to node.
 	err := g.ForEachNodeDirectedChannel(
-		node, cb, func() {
+		context.TODO(), node, cb, func() {
 			max = 0
 			total = 0
 		},
@@ -1291,7 +1291,7 @@ func findBlindedPaths(g Graph, target route.Vertex,
 			nextTargetReset   = nextTarget
 		)
 		err := g.ForEachNodeDirectedChannel(
-			nextTarget,
+			context.TODO(), nextTarget,
 			func(channel *graphdb.DirectedChannel) error {
 				// This is not the right channel, continue to
 				// the node's other channels.
@@ -1466,7 +1466,8 @@ func processNodeForBlindedPath(g Graph, node route.Vertex,
 	// Now, iterate over the node's channels in search for paths to this
 	// node that can be used for blinded paths
 	err = g.ForEachNodeDirectedChannel(
-		node, func(channel *graphdb.DirectedChannel) error {
+		context.TODO(), node,
+		func(channel *graphdb.DirectedChannel) error {
 			// Keep track of how many incoming channels this node
 			// has. We only use a node as an introduction node if it
 			// has channels other than the one that lead us to it.
