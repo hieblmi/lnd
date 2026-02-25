@@ -1492,7 +1492,7 @@ const (
 // with the current UTXO state. A slice of channels that have been closed by
 // the target block along with any pruned nodes are returned if the function
 // succeeds without error.
-func (c *KVStore) PruneGraph(spentOutputs []*wire.OutPoint,
+func (c *KVStore) PruneGraph(_ context.Context, spentOutputs []*wire.OutPoint,
 	blockHash *chainhash.Hash, blockHeight uint32) (
 	[]*models.ChannelEdgeInfo, []route.Vertex, error) {
 

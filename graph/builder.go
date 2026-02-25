@@ -185,7 +185,8 @@ func (b *Builder) Start() error {
 			// the prune height to the current best height of the
 			// chain backend.
 			_, err = b.cfg.Graph.PruneGraph(
-				nil, bestHash, uint32(bestHeight),
+				context.TODO(), nil, bestHash,
+				uint32(bestHeight),
 			)
 			if err != nil {
 				return err
@@ -443,7 +444,7 @@ func (b *Builder) syncGraphWithChain() error {
 	// With the spent outputs gathered, attempt to prune the channel graph,
 	// also passing in the best hash+height so the prune tip can be updated.
 	closedChans, err := b.cfg.Graph.PruneGraph(
-		spentOutputs, bestHash, uint32(bestHeight),
+		context.TODO(), spentOutputs, bestHash, uint32(bestHeight),
 	)
 	if err != nil {
 		return err
@@ -857,8 +858,10 @@ func (b *Builder) updateGraphWithClosedChannels(
 	// With the spent outputs gathered, attempt to prune the channel graph,
 	// also passing in the hash+height of the block being pruned so the
 	// prune tip can be updated.
-	chansClosed, err := b.cfg.Graph.PruneGraph(spentOutputs,
-		&chainUpdate.Hash, chainUpdate.Height)
+	chansClosed, err := b.cfg.Graph.PruneGraph(
+		context.TODO(), spentOutputs, &chainUpdate.Hash,
+		chainUpdate.Height,
+	)
 	if err != nil {
 		log.Errorf("unable to prune routing table: %v", err)
 		return err

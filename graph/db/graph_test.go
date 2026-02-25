@@ -863,12 +863,12 @@ func TestDisconnectBlockAtHeight(t *testing.T) {
 
 	// Prune the graph a few times to make sure we have entries in the
 	// prune log.
-	_, err := graph.PruneGraph(spendOutputs, &blockHash, 155)
+	_, err := graph.PruneGraph(ctx, spendOutputs, &blockHash, 155)
 	require.NoError(t, err, "unable to prune graph")
 	var blockHash2 chainhash.Hash
 	copy(blockHash2[:], bytes.Repeat([]byte{2}, 32))
 
-	_, err = graph.PruneGraph(spendOutputs, &blockHash2, 156)
+	_, err = graph.PruneGraph(ctx, spendOutputs, &blockHash2, 156)
 	require.NoError(t, err, "unable to prune graph")
 
 	// We'll create 3 almost identical edges, so first create a helper
@@ -2287,7 +2287,9 @@ func TestGraphPruning(t *testing.T) {
 	copy(blockHash[:], bytes.Repeat([]byte{1}, 32))
 	blockHeight := uint32(1)
 	block := channelPoints[:2]
-	prunedChans, err := graph.PruneGraph(block, &blockHash, blockHeight)
+	prunedChans, err := graph.PruneGraph(
+		ctx, block, &blockHash, blockHeight,
+	)
 	require.NoError(t, err, "unable to prune graph")
 	require.Len(t, prunedChans, 2)
 
@@ -2313,7 +2315,7 @@ func TestGraphPruning(t *testing.T) {
 	blockHash = sha256.Sum256(blockHash[:])
 	blockHeight = 2
 	prunedChans, err = graph.PruneGraph(
-		[]*wire.OutPoint{nonChannel}, &blockHash, blockHeight,
+		ctx, []*wire.OutPoint{nonChannel}, &blockHash, blockHeight,
 	)
 	require.NoError(t, err, "unable to prune graph")
 
@@ -2331,7 +2333,7 @@ func TestGraphPruning(t *testing.T) {
 	blockHash = sha256.Sum256(blockHash[:])
 	blockHeight = 3
 	prunedChans, err = graph.PruneGraph(
-		channelPoints[2:], &blockHash, blockHeight,
+		ctx, channelPoints[2:], &blockHash, blockHeight,
 	)
 	require.NoError(t, err, "unable to prune graph")
 
@@ -3383,7 +3385,7 @@ func TestStressTestChannelGraphAPI(t *testing.T) {
 				}
 
 				_, err := graph.PruneGraph(
-					spentOutpoints, &blockHash, 100,
+					ctx, spentOutpoints, &blockHash, 100,
 				)
 
 				return err
@@ -3995,7 +3997,8 @@ func TestChannelEdgePruningUpdateIndexDeletion(t *testing.T) {
 	var blockHash chainhash.Hash
 	copy(blockHash[:], bytes.Repeat([]byte{2}, 32))
 	_, err := graph.PruneGraph(
-		[]*wire.OutPoint{&edgeInfo.ChannelPoint}, &blockHash, 101,
+		ctx, []*wire.OutPoint{&edgeInfo.ChannelPoint}, &blockHash,
+		101,
 	)
 	require.NoError(t, err, "unable to prune graph")
 
@@ -4762,12 +4765,12 @@ func testBatchedAddChannelEdge(t *testing.T, v lnwire.GossipVersion) {
 
 	// Prune the graph a few times to make sure we have entries in the
 	// prune log.
-	_, err := graph.PruneGraph(spendOutputs, &blockHash, 155)
+	_, err := graph.PruneGraph(ctx, spendOutputs, &blockHash, 155)
 	require.Nil(t, err)
 	var blockHash2 chainhash.Hash
 	copy(blockHash2[:], bytes.Repeat([]byte{2}, 32))
 
-	_, err = graph.PruneGraph(spendOutputs, &blockHash2, 156)
+	_, err = graph.PruneGraph(ctx, spendOutputs, &blockHash2, 156)
 	require.Nil(t, err)
 
 	// We'll create 3 almost identical edges, so first create a helper

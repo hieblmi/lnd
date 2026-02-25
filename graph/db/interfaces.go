@@ -401,7 +401,7 @@ type Store interface { //nolint:interfacebloat
 	// slice of channels that have been closed by the target block along
 	// with any pruned nodes are returned if the function succeeds without
 	// error.
-	PruneGraph(spentOutputs []*wire.OutPoint,
+	PruneGraph(ctx context.Context, spentOutputs []*wire.OutPoint,
 		blockHash *chainhash.Hash, blockHeight uint32) (
 		[]*models.ChannelEdgeInfo, []route.Vertex, error)
 

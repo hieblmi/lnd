@@ -2831,11 +2831,10 @@ func (s *SQLStore) PruneGraphNodes(ctx context.Context) (
 // succeeds without error.
 //
 // NOTE: part of the Store interface.
-func (s *SQLStore) PruneGraph(spentOutputs []*wire.OutPoint,
-	blockHash *chainhash.Hash, blockHeight uint32) (
-	[]*models.ChannelEdgeInfo, []route.Vertex, error) {
-
-	ctx := context.TODO()
+func (s *SQLStore) PruneGraph(ctx context.Context,
+	spentOutputs []*wire.OutPoint, blockHash *chainhash.Hash,
+	blockHeight uint32) ([]*models.ChannelEdgeInfo, []route.Vertex,
+	error) {
 
 	s.cacheMu.Lock()
 	defer s.cacheMu.Unlock()
