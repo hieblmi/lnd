@@ -2006,7 +2006,7 @@ func (c *KVStore) DeleteChannelEdges(_ context.Context,
 // ChannelID attempt to lookup the 8-byte compact channel ID which maps to the
 // passed channel point (outpoint). If the passed channel doesn't exist within
 // the database, then ErrEdgeNotFound is returned.
-func (c *KVStore) ChannelID(v lnwire.GossipVersion,
+func (c *KVStore) ChannelID(_ context.Context, v lnwire.GossipVersion,
 	chanPoint *wire.OutPoint) (uint64, error) {
 
 	if v != lnwire.GossipVersion1 {

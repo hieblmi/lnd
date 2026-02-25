@@ -1191,7 +1191,7 @@ func testEdgeInfoUpdates(t *testing.T, v lnwire.GossipVersion) {
 
 	// We should also be able to retrieve the channelID only knowing the
 	// channel point of the channel.
-	dbChanID, err := graph.ChannelID(&outpoint)
+	dbChanID, err := graph.ChannelID(ctx, &outpoint)
 	require.NoError(t, err, "unable to retrieve channel ID")
 	require.Equal(t, chanID, dbChanID)
 

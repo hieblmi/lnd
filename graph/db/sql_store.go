@@ -2510,11 +2510,10 @@ func (s *SQLStore) HasChannelEdge(ctx context.Context,
 // the database, then ErrEdgeNotFound is returned.
 //
 // NOTE: part of the Store interface.
-func (s *SQLStore) ChannelID(v lnwire.GossipVersion,
+func (s *SQLStore) ChannelID(ctx context.Context, v lnwire.GossipVersion,
 	chanPoint *wire.OutPoint) (uint64, error) {
 
 	var (
-		ctx       = context.TODO()
 		channelID uint64
 	)
 	err := s.db.ExecTx(ctx, sqldb.ReadTxOpt(), func(db SQLQueries) error {

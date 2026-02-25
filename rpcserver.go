@@ -3204,7 +3204,7 @@ func abandonChanFromGraph(chanGraph *graphdb.VersionedGraph,
 	// First, we'll obtain the channel ID. If we can't locate this, then
 	// it's the case that the channel may have already been removed from
 	// the graph, so we'll return a nil error.
-	chanID, err := chanGraph.ChannelID(chanPoint)
+	chanID, err := chanGraph.ChannelID(context.TODO(), chanPoint)
 	switch {
 	case errors.Is(err, graphdb.ErrEdgeNotFound):
 		return nil

@@ -986,8 +986,10 @@ func (c *VersionedGraph) HighestChanID(ctx context.Context) (uint64, error) {
 }
 
 // ChannelID attempts to lookup the 8-byte compact channel ID.
-func (c *VersionedGraph) ChannelID(chanPoint *wire.OutPoint) (uint64, error) {
-	return c.db.ChannelID(c.v, chanPoint)
+func (c *VersionedGraph) ChannelID(ctx context.Context,
+	chanPoint *wire.OutPoint) (uint64, error) {
+
+	return c.db.ChannelID(ctx, c.v, chanPoint)
 }
 
 // IsPublicNode determines whether the node is seen as public in the graph.
