@@ -2377,7 +2377,8 @@ func (c *KVStore) fetchNextChanUpdateBatch(
 
 // ChanUpdatesInHorizon returns all the known channel edges which have at least
 // one edge that has an update timestamp within the specified horizon.
-func (c *KVStore) ChanUpdatesInHorizon(startTime, endTime time.Time,
+func (c *KVStore) ChanUpdatesInHorizon(_ context.Context,
+	startTime, endTime time.Time,
 	opts ...IteratorOption) iter.Seq2[ChannelEdge, error] {
 
 	cfg := defaultIteratorConfig()

@@ -600,7 +600,9 @@ func (b *Builder) pruneZombieChans() error {
 
 	startTime := time.Unix(0, 0)
 	endTime := time.Now().Add(-1 * chanExpiry)
-	oldEdgesIter := b.cfg.Graph.ChanUpdatesInHorizon(startTime, endTime)
+	oldEdgesIter := b.cfg.Graph.ChanUpdatesInHorizon(
+		context.TODO(), startTime, endTime,
+	)
 
 	for u, err := range oldEdgesIter {
 		if err != nil {

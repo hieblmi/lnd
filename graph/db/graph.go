@@ -703,10 +703,11 @@ func (c *ChannelGraph) HighestChanID(ctx context.Context,
 
 // ChanUpdatesInHorizon returns all known channel edges with updates in the
 // horizon.
-func (c *ChannelGraph) ChanUpdatesInHorizon(startTime, endTime time.Time,
+func (c *ChannelGraph) ChanUpdatesInHorizon(ctx context.Context,
+	startTime, endTime time.Time,
 	opts ...IteratorOption) iter.Seq2[ChannelEdge, error] {
 
-	return c.db.ChanUpdatesInHorizon(startTime, endTime, opts...)
+	return c.db.ChanUpdatesInHorizon(ctx, startTime, endTime, opts...)
 }
 
 // FilterChannelRange returns channel IDs within the passed block height range.

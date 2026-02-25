@@ -2396,7 +2396,7 @@ func TestChanUpdatesInHorizon(t *testing.T) {
 	// If we issue an arbitrary query before any channel updates are
 	// inserted in the database, we should get zero results.
 	chanIter := graph.ChanUpdatesInHorizon(
-		time.Unix(999, 0), time.Unix(9999, 0),
+		ctx, time.Unix(999, 0), time.Unix(9999, 0),
 	)
 
 	chanUpdates, err := fn.CollectErr(chanIter)
@@ -2503,7 +2503,7 @@ func TestChanUpdatesInHorizon(t *testing.T) {
 	}
 	for _, queryCase := range queryCases {
 		respIter := graph.ChanUpdatesInHorizon(
-			queryCase.start, queryCase.end,
+			ctx, queryCase.start, queryCase.end,
 		)
 
 		resp, err := fn.CollectErr(respIter)
@@ -2905,7 +2905,7 @@ func TestChanUpdatesInHorizonBoundaryConditions(t *testing.T) {
 			// Now we'll run the main query, and verify that we get
 			// back the expected number of channels.
 			iter := graph.ChanUpdatesInHorizon(
-				startTime, startTime.Add(26*time.Hour),
+				ctx, startTime, startTime.Add(26*time.Hour),
 				WithChanUpdateIterBatchSize(batchSize),
 			)
 
@@ -3370,7 +3370,8 @@ func TestStressTestChannelGraphAPI(t *testing.T) {
 			name: "ChanUpdateInHorizon",
 			fn: func() error {
 				iter := graph.ChanUpdatesInHorizon(
-					time.Now().Add(-time.Hour), time.Now(),
+					ctx, time.Now().Add(-time.Hour),
+					time.Now(),
 				)
 				_, err := fn.CollectErr(iter)
 

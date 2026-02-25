@@ -1170,7 +1170,8 @@ func (s *SQLStore) updateChanCacheBatch(v lnwire.GossipVersion,
 // 6. Repeat with updated pagination cursor until no more results
 //
 // NOTE: This is part of the Store interface.
-func (s *SQLStore) ChanUpdatesInHorizon(startTime, endTime time.Time,
+func (s *SQLStore) ChanUpdatesInHorizon(ctx context.Context,
+	startTime, endTime time.Time,
 	opts ...IteratorOption) iter.Seq2[ChannelEdge, error] {
 
 	// Apply options.
@@ -1181,7 +1182,6 @@ func (s *SQLStore) ChanUpdatesInHorizon(startTime, endTime time.Time,
 
 	return func(yield func(ChannelEdge, error) bool) {
 		var (
-			ctx            = context.TODO()
 			edgesSeen      = make(map[uint64]struct{})
 			edgesToCache   = make(map[uint64]ChannelEdge)
 			hits           int

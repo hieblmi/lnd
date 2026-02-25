@@ -115,7 +115,7 @@ func (c *ChanSeries) UpdatesInHorizon(chain chainhash.Hash,
 		// First, we'll query for all the set of channels that have an
 		// update that falls within the specified horizon.
 		chansInHorizon := c.graph.ChanUpdatesInHorizon(
-			startTime, endTime,
+			context.TODO(), startTime, endTime,
 		)
 
 		for channel, err := range chansInHorizon {
