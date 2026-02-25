@@ -1620,7 +1620,7 @@ func (c *KVStore) PruneGraph(spentOutputs []*wire.OutPoint,
 // any nodes from the channel graph that are currently unconnected. This ensure
 // that we only maintain a graph of reachable nodes. In the event that a pruned
 // node gains more channels, it will be re-added back to the graph.
-func (c *KVStore) PruneGraphNodes() ([]route.Vertex, error) {
+func (c *KVStore) PruneGraphNodes(_ context.Context) ([]route.Vertex, error) {
 	var prunedNodes []route.Vertex
 	err := kvdb.Update(c.db, func(tx kvdb.RwTx) error {
 		nodes := tx.ReadWriteBucket(nodeBucket)

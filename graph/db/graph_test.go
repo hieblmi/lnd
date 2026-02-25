@@ -4044,7 +4044,7 @@ func TestPruneGraphNodes(t *testing.T) {
 	require.NoError(t, graph.UpdateEdgePolicy(ctx, edge1))
 
 	// We'll now initiate a around of graph pruning.
-	require.NoError(t, graph.PruneGraphNodes())
+	require.NoError(t, graph.PruneGraphNodes(ctx))
 
 	// At this point, there should be 3 nodes left in the graph still: the
 	// source node (which can't be pruned), and node 1+2. Nodes 1 and two

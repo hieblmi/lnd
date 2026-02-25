@@ -2802,8 +2802,8 @@ func (s *SQLStore) forEachChanInSCIDList(ctx context.Context, db SQLQueries,
 // source nodes.
 //
 // NOTE: part of the Store interface.
-func (s *SQLStore) PruneGraphNodes() ([]route.Vertex, error) {
-	var ctx = context.TODO()
+func (s *SQLStore) PruneGraphNodes(ctx context.Context) (
+	[]route.Vertex, error) {
 
 	var prunedNodes []route.Vertex
 	err := s.db.ExecTx(ctx, sqldb.WriteTxOpt(), func(db SQLQueries) error {

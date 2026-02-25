@@ -390,7 +390,7 @@ type Store interface { //nolint:interfacebloat
 	// unconnected. This ensures that we only maintain a graph of reachable
 	// nodes. In the event that a pruned node gains more channels, it will
 	// be re-added back to the graph.
-	PruneGraphNodes() ([]route.Vertex, error)
+	PruneGraphNodes(ctx context.Context) ([]route.Vertex, error)
 
 	// PruneGraph prunes newly closed channels from the channel graph in
 	// response to a new block being solved on the network. Any transactions

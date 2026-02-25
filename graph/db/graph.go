@@ -494,8 +494,8 @@ func (c *ChannelGraph) PruneGraph(spentOutputs []*wire.OutPoint,
 // any nodes from the channel graph that are currently unconnected. This ensure
 // that we only maintain a graph of reachable nodes. In the event that a pruned
 // node gains more channels, it will be re-added back to the graph.
-func (c *ChannelGraph) PruneGraphNodes() error {
-	nodes, err := c.db.PruneGraphNodes()
+func (c *ChannelGraph) PruneGraphNodes(ctx context.Context) error {
+	nodes, err := c.db.PruneGraphNodes(ctx)
 	if err != nil {
 		return err
 	}
