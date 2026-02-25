@@ -215,7 +215,9 @@ func (c *ChanSeries) FilterKnownChanIDs(_ chainhash.Hash,
 	isZombieChan func(time.Time, time.Time) bool) (
 	[]lnwire.ShortChannelID, error) {
 
-	newChanIDs, err := c.graph.FilterKnownChanIDs(superSet, isZombieChan)
+	newChanIDs, err := c.graph.FilterKnownChanIDs(
+		context.TODO(), superSet, isZombieChan,
+	)
 	if err != nil {
 		return nil, err
 	}

@@ -2679,8 +2679,8 @@ func (c *KVStore) NodeUpdatesInHorizon(_ context.Context, startTime,
 // passed in. This method can be used by callers to determine the set of
 // channels another peer knows of that we don't. The ChannelUpdateInfos for the
 // known zombies is also returned.
-func (c *KVStore) FilterKnownChanIDs(chansInfo []ChannelUpdateInfo) ([]uint64,
-	[]ChannelUpdateInfo, error) {
+func (c *KVStore) FilterKnownChanIDs(_ context.Context,
+	chansInfo []ChannelUpdateInfo) ([]uint64, []ChannelUpdateInfo, error) {
 
 	var (
 		newChanIDs   []uint64

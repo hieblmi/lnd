@@ -267,8 +267,9 @@ type Store interface { //nolint:interfacebloat
 	// callers to determine the set of channels another peer knows of that
 	// we don't. The ChannelUpdateInfos for the known zombies is also
 	// returned.
-	FilterKnownChanIDs(chansInfo []ChannelUpdateInfo) ([]uint64,
-		[]ChannelUpdateInfo, error)
+	FilterKnownChanIDs(ctx context.Context,
+		chansInfo []ChannelUpdateInfo) ([]uint64, []ChannelUpdateInfo,
+		error)
 
 	// FilterChannelRange returns the channel ID's of all known channels
 	// which were mined in a block height within the passed range. The

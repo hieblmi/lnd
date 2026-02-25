@@ -2976,7 +2976,7 @@ func TestFilterKnownChanIDsZombieRevival(t *testing.T) {
 
 	// Call FilterKnownChanIDs with an isStillZombie call-back that would
 	// result in the current zombies still be considered as zombies.
-	_, err = graph.FilterKnownChanIDs([]ChannelUpdateInfo{
+	_, err = graph.FilterKnownChanIDs(ctx, []ChannelUpdateInfo{
 		{ShortChannelID: scid1},
 		{ShortChannelID: scid2},
 		{ShortChannelID: scid3},
@@ -2992,7 +2992,7 @@ func TestFilterKnownChanIDsZombieRevival(t *testing.T) {
 	// Now call it again but this time with a isStillZombie call-back that
 	// would result in channel with SCID 2 no longer being considered a
 	// zombie.
-	_, err = graph.FilterKnownChanIDs([]ChannelUpdateInfo{
+	_, err = graph.FilterKnownChanIDs(ctx, []ChannelUpdateInfo{
 		{ShortChannelID: scid1},
 		{
 			ShortChannelID:       scid2,
@@ -3038,7 +3038,9 @@ func TestFilterKnownChanIDs(t *testing.T) {
 		{ShortChannelID: scid2},
 		{ShortChannelID: scid3},
 	}
-	filteredIDs, err := graph.FilterKnownChanIDs(preChanIDs, isZombieUpdate)
+	filteredIDs, err := graph.FilterKnownChanIDs(
+		ctx, preChanIDs, isZombieUpdate,
+	)
 	require.NoError(t, err, "unable to filter chan IDs")
 	require.EqualValues(t, []uint64{
 		scid1.ToUint64(),
@@ -3163,7 +3165,7 @@ func TestFilterKnownChanIDs(t *testing.T) {
 
 	for _, queryCase := range queryCases {
 		resp, err := graph.FilterKnownChanIDs(
-			queryCase.queryIDs, isZombieUpdate,
+			ctx, queryCase.queryIDs, isZombieUpdate,
 		)
 		require.NoError(t, err)
 
@@ -3342,7 +3344,7 @@ func TestStressTestChannelGraphAPI(t *testing.T) {
 				}
 
 				_, err := graph.FilterKnownChanIDs(
-					chanIDs,
+					ctx, chanIDs,
 					func(t time.Time, t2 time.Time) bool {
 						return rand.Intn(2) == 0
 					},

@@ -2679,11 +2679,10 @@ func (s *SQLStore) forEachChanWithPoliciesInSCIDList(ctx context.Context,
 // known zombies is also returned.
 //
 // NOTE: part of the Store interface.
-func (s *SQLStore) FilterKnownChanIDs(chansInfo []ChannelUpdateInfo) ([]uint64,
-	[]ChannelUpdateInfo, error) {
+func (s *SQLStore) FilterKnownChanIDs(ctx context.Context,
+	chansInfo []ChannelUpdateInfo) ([]uint64, []ChannelUpdateInfo, error) {
 
 	var (
-		ctx          = context.TODO()
 		newChanIDs   []uint64
 		knownZombies []ChannelUpdateInfo
 		infoLookup   = make(
