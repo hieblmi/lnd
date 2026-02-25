@@ -323,7 +323,7 @@ type Store interface { //nolint:interfacebloat
 	// channel within the known channel graph. The set of UTXO's (along with
 	// their scripts) returned are the ones that need to be watched on chain
 	// to detect channel closes on the resident blockchain.
-	ChannelView() ([]EdgePoint, error)
+	ChannelView(ctx context.Context) ([]EdgePoint, error)
 
 	// MarkEdgeZombie attempts to mark a channel identified by its channel
 	// ID as a zombie. This method is used on an ad-hoc basis, when channels

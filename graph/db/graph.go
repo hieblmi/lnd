@@ -755,8 +755,8 @@ func (c *ChannelGraph) FetchChannelEdgesByID(ctx context.Context,
 }
 
 // ChannelView returns the verifiable edge information for each active channel.
-func (c *ChannelGraph) ChannelView() ([]EdgePoint, error) {
-	return c.db.ChannelView()
+func (c *ChannelGraph) ChannelView(ctx context.Context) ([]EdgePoint, error) {
+	return c.db.ChannelView(ctx)
 }
 
 // IsZombieEdge returns whether the edge is considered zombie.

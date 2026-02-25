@@ -2274,7 +2274,7 @@ func TestGraphPruning(t *testing.T) {
 
 	// With all the channel points added, we'll consult the graph to ensure
 	// it has the same channel view as the one we just constructed.
-	channelView, err := graph.ChannelView()
+	channelView, err := graph.ChannelView(ctx)
 	require.NoError(t, err, "unable to get graph channel view")
 	assertChanViewEqual(t, channelView, edgePoints)
 
@@ -2301,7 +2301,7 @@ func TestGraphPruning(t *testing.T) {
 	assertNumChans(t, graph, 2)
 
 	// Those channels should also be missing from the channel view.
-	channelView, err = graph.ChannelView()
+	channelView, err = graph.ChannelView(ctx)
 	require.NoError(t, err, "unable to get graph channel view")
 	assertChanViewEqualChanPoints(t, channelView, channelPoints[2:])
 
@@ -2350,7 +2350,7 @@ func TestGraphPruning(t *testing.T) {
 	// Finally, the channel view at this point in the graph should now be
 	// completely empty.  Those channels should also be missing from the
 	// channel view.
-	channelView, err = graph.ChannelView()
+	channelView, err = graph.ChannelView(ctx)
 	require.NoError(t, err, "unable to get graph channel view")
 	require.Empty(t, channelView)
 }

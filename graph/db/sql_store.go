@@ -2985,11 +2985,8 @@ func (s *SQLStore) deleteChannels(ctx context.Context, db SQLQueries,
 // closes on the resident blockchain.
 //
 // NOTE: part of the Store interface.
-func (s *SQLStore) ChannelView() ([]EdgePoint, error) {
-	var (
-		ctx        = context.TODO()
-		edgePoints []EdgePoint
-	)
+func (s *SQLStore) ChannelView(ctx context.Context) ([]EdgePoint, error) {
+	var edgePoints []EdgePoint
 
 	err := s.db.ExecTx(ctx, sqldb.ReadTxOpt(), func(db SQLQueries) error {
 		handleChannel := func(_ context.Context,
