@@ -98,8 +98,10 @@ func createTestNode(t *testing.T) *models.Node {
 	return n
 }
 
-func randEdgePolicy(chanID *lnwire.ShortChannelID,
-	node *models.Node) (*models.ChannelEdgePolicy, error) {
+func randEdgePolicy(t testing.TB, chanID *lnwire.ShortChannelID,
+	node *models.Node) *models.ChannelEdgePolicy {
+
+	t.Helper()
 
 	InboundFee := models.InboundFee{
 		Base: prand.Int31() * -1,
@@ -108,9 +110,7 @@ func randEdgePolicy(chanID *lnwire.ShortChannelID,
 	inboundFee := InboundFee.ToWire()
 
 	var extraOpaqueData lnwire.ExtraOpaqueData
-	if err := extraOpaqueData.PackRecords(&inboundFee); err != nil {
-		return nil, err
-	}
+	require.NoError(t, extraOpaqueData.PackRecords(&inboundFee))
 
 	return &models.ChannelEdgePolicy{
 		Version:                   lnwire.GossipVersion1,
@@ -125,7 +125,7 @@ func randEdgePolicy(chanID *lnwire.ShortChannelID,
 		ToNode:                    node.PubKeyBytes,
 		InboundFee:                fn.Some(inboundFee),
 		ExtraOpaqueData:           extraOpaqueData,
-	}, nil
+	}
 }
 
 func createChannelEdge(bitcoinKey1, bitcoinKey2 []byte,
@@ -480,12 +480,10 @@ func TestEdgeUpdateNotification(t *testing.T) {
 
 	// Create random policy edges that are stemmed to the channel id
 	// created above.
-	edge1, err := randEdgePolicy(chanID, node1)
-	require.NoError(t, err, "unable to create a random chan policy")
+	edge1 := randEdgePolicy(t, chanID, node1)
 	edge1.ChannelFlags = 0
 
-	edge2, err := randEdgePolicy(chanID, node2)
-	require.NoError(t, err, "unable to create a random chan policy")
+	edge2 := randEdgePolicy(t, chanID, node2)
 	edge2.ChannelFlags = 1
 
 	require.NoError(t, ctx.builder.UpdateEdge(ctxb, edge1))
