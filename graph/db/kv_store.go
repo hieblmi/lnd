@@ -496,9 +496,10 @@ func forEachChannel(db kvdb.Backend, cb func(*models.ChannelEdgeInfo,
 //
 // NOTE: this method is like ForEachChannel but fetches only the data required
 // for the graph cache.
-func (c *KVStore) ForEachChannelCacheable(v lnwire.GossipVersion,
-	cb func(*models.CachedEdgeInfo, *models.CachedEdgePolicy,
-		*models.CachedEdgePolicy) error, reset func()) error {
+func (c *KVStore) ForEachChannelCacheable(_ context.Context,
+	v lnwire.GossipVersion, cb func(*models.CachedEdgeInfo,
+		*models.CachedEdgePolicy, *models.CachedEdgePolicy) error,
+	reset func()) error {
 
 	if v != lnwire.GossipVersion1 {
 		return ErrVersionNotSupportedForKVDB

@@ -185,7 +185,7 @@ func (c *ChannelGraph) populateCache(ctx context.Context) error {
 		}
 
 		err = c.db.ForEachChannelCacheable(
-			v, func(info *models.CachedEdgeInfo,
+			ctx, v, func(info *models.CachedEdgeInfo,
 				policy1,
 				policy2 *models.CachedEdgePolicy) error {
 
@@ -950,11 +950,11 @@ func (c *VersionedGraph) ForEachNodeCacheable(ctx context.Context,
 }
 
 // ForEachChannelCacheable iterates through all channel edges for the cache.
-func (c *VersionedGraph) ForEachChannelCacheable(
+func (c *VersionedGraph) ForEachChannelCacheable(ctx context.Context,
 	cb func(*models.CachedEdgeInfo, *models.CachedEdgePolicy,
 		*models.CachedEdgePolicy) error, reset func()) error {
 
-	return c.db.ForEachChannelCacheable(c.v, cb, reset)
+	return c.db.ForEachChannelCacheable(ctx, c.v, cb, reset)
 }
 
 // DisabledChannelIDs returns the channel ids of disabled channels.

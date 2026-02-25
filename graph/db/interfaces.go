@@ -185,7 +185,7 @@ type Store interface { //nolint:interfacebloat
 	//
 	// NOTE: this method is like ForEachChannel but fetches only the data
 	// required for the graph cache.
-	ForEachChannelCacheable(v lnwire.GossipVersion,
+	ForEachChannelCacheable(ctx context.Context, v lnwire.GossipVersion,
 		cb func(*models.CachedEdgeInfo, *models.CachedEdgePolicy,
 			*models.CachedEdgePolicy) error, reset func()) error
 

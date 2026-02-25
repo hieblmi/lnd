@@ -1564,11 +1564,10 @@ func (s *SQLStore) ForEachNodeCached(ctx context.Context, withAddrs bool,
 //
 // NOTE: this method is like ForEachChannel but fetches only the data
 // required for the graph cache.
-func (s *SQLStore) ForEachChannelCacheable(v lnwire.GossipVersion,
+func (s *SQLStore) ForEachChannelCacheable(ctx context.Context,
+	v lnwire.GossipVersion,
 	cb func(*models.CachedEdgeInfo, *models.CachedEdgePolicy,
 		*models.CachedEdgePolicy) error, reset func()) error {
-
-	ctx := context.TODO()
 
 	if !isKnownGossipVersion(v) {
 		return fmt.Errorf("unsupported gossip version: %d", v)
