@@ -2546,10 +2546,9 @@ func (s *SQLStore) ChannelID(ctx context.Context, v lnwire.GossipVersion,
 // source node's point of view.
 //
 // NOTE: part of the Store interface.
-func (s *SQLStore) IsPublicNode(v lnwire.GossipVersion, pubKey [33]byte) (bool,
-	error) {
+func (s *SQLStore) IsPublicNode(ctx context.Context, v lnwire.GossipVersion,
+	pubKey [33]byte) (bool, error) {
 
-	ctx := context.TODO()
 	if !isKnownGossipVersion(v) {
 		return false, fmt.Errorf("unsupported gossip version: %d", v)
 	}

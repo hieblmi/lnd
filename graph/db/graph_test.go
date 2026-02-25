@@ -4225,7 +4225,7 @@ func testNodeIsPublic(t *testing.T, v lnwire.GossipVersion) {
 		for _, node := range nodes {
 			for _, graph := range graphs {
 				isPublic, err := graph.IsPublicNode(
-					node.PubKeyBytes,
+					ctx, node.PubKeyBytes,
 				)
 				require.NoError(t, err)
 
@@ -4330,7 +4330,7 @@ func testIsPublicNodeEmptyChannelSignature(t *testing.T,
 
 	// node1 should NOT be considered public because the
 	// channel announcement has empty signatures.
-	isPublic, err := graph.IsPublicNode(node1.PubKeyBytes)
+	isPublic, err := graph.IsPublicNode(ctx, node1.PubKeyBytes)
 	require.NoError(t, err)
 	require.False(t, isPublic)
 }
@@ -4354,7 +4354,7 @@ func BenchmarkIsPublicNode(b *testing.B) {
 		// Query random nodes to avoid query caching and better
 		// represent real-world query patterns.
 		nodePub := nodes[rng.Intn(len(nodes))].PubKeyBytes
-		_, err := graph.IsPublicNode(nodePub)
+		_, err := graph.IsPublicNode(b.Context(), nodePub)
 		require.NoError(b, err)
 	}
 }
