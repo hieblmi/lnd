@@ -128,9 +128,11 @@ func randEdgePolicy(t testing.TB, chanID *lnwire.ShortChannelID,
 	}
 }
 
-func createChannelEdge(bitcoinKey1, bitcoinKey2 []byte,
+func createChannelEdge(t testing.TB, bitcoinKey1, bitcoinKey2 []byte,
 	chanValue btcutil.Amount, fundingHeight uint32) ([]byte, *wire.MsgTx,
-	*wire.OutPoint, *lnwire.ShortChannelID, error) {
+	*wire.OutPoint, *lnwire.ShortChannelID) {
+
+	t.Helper()
 
 	fundingTx := wire.NewMsgTx(2)
 	script, tx, err := input.GenFundingPkScript(
@@ -138,9 +140,7 @@ func createChannelEdge(bitcoinKey1, bitcoinKey2 []byte,
 		bitcoinKey2,
 		int64(chanValue),
 	)
-	if err != nil {
-		return nil, nil, nil, nil, err
-	}
+	require.NoError(t, err)
 
 	fundingTx.TxOut = append(fundingTx.TxOut, tx)
 	chanUtxo := wire.OutPoint{
@@ -155,7 +155,7 @@ func createChannelEdge(bitcoinKey1, bitcoinKey2 []byte,
 		TxPosition:  0,
 	}
 
-	return script, fundingTx, &chanUtxo, chanID, nil
+	return script, fundingTx, &chanUtxo, chanID
 }
 
 type mockChain struct {
@@ -429,11 +429,10 @@ func TestEdgeUpdateNotification(t *testing.T) {
 
 	// First we'll create the utxo for the channel to be "closed"
 	const chanValue = 10000
-	script, fundingTx, chanPoint, chanID, err := createChannelEdge(
-		bitcoinKey1.SerializeCompressed(),
+	script, fundingTx, chanPoint, chanID := createChannelEdge(
+		t, bitcoinKey1.SerializeCompressed(),
 		bitcoinKey2.SerializeCompressed(), chanValue, 0,
 	)
-	require.NoError(t, err, "unable create channel edge")
 
 	// We'll also add a record for the block that included our funding
 	// transaction.
@@ -589,12 +588,11 @@ func TestNodeUpdateNotification(t *testing.T) {
 	// We only accept node announcements from nodes having a known channel,
 	// so create one now.
 	const chanValue = 10000
-	script, fundingTx, _, chanID, err := createChannelEdge(
-		bitcoinKey1.SerializeCompressed(),
+	script, fundingTx, _, chanID := createChannelEdge(
+		t, bitcoinKey1.SerializeCompressed(),
 		bitcoinKey2.SerializeCompressed(),
 		chanValue, startingBlockHeight,
 	)
-	require.NoError(t, err, "unable create channel edge")
 
 	// We'll also add a record for the block that included our funding
 	// transaction.
@@ -756,12 +754,11 @@ func TestNotificationCancellation(t *testing.T) {
 
 	// We'll create the utxo for a new channel.
 	const chanValue = 10000
-	script, fundingTx, chanPoint, chanID, err := createChannelEdge(
-		bitcoinKey1.SerializeCompressed(),
+	script, fundingTx, chanPoint, chanID := createChannelEdge(
+		t, bitcoinKey1.SerializeCompressed(),
 		bitcoinKey2.SerializeCompressed(),
 		chanValue, startingBlockHeight,
 	)
-	require.NoError(t, err, "unable create channel edge")
 
 	// We'll also add a record for the block that included our funding
 	// transaction.
@@ -835,12 +832,11 @@ func TestChannelCloseNotification(t *testing.T) {
 
 	// First we'll create the utxo for the channel to be "closed"
 	const chanValue = 10000
-	script, fundingTx, chanUtxo, chanID, err := createChannelEdge(
-		bitcoinKey1.SerializeCompressed(),
+	script, fundingTx, chanUtxo, chanID := createChannelEdge(
+		t, bitcoinKey1.SerializeCompressed(),
 		bitcoinKey2.SerializeCompressed(), chanValue,
 		startingBlockHeight,
 	)
-	require.NoError(t, err, "unable create channel edge")
 
 	// We'll also add a record for the block that included our funding
 	// transaction.
