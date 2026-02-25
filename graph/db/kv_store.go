@@ -3989,8 +3989,9 @@ func (c *KVStore) FetchChannelEdgesByOutpoint(v lnwire.GossipVersion,
 // ErrZombieEdge an be returned if the edge is currently marked as a zombie
 // within the database. In this case, the ChannelEdgePolicy's will be nil, and
 // the ChannelEdgeInfo will only include the public keys of each node.
-func (c *KVStore) FetchChannelEdgesByID(v lnwire.GossipVersion,
-	chanID uint64) (*models.ChannelEdgeInfo, *models.ChannelEdgePolicy,
+func (c *KVStore) FetchChannelEdgesByID(_ context.Context,
+	v lnwire.GossipVersion, chanID uint64) (
+	*models.ChannelEdgeInfo, *models.ChannelEdgePolicy,
 	*models.ChannelEdgePolicy, error) {
 
 	if v != lnwire.GossipVersion1 {

@@ -643,7 +643,7 @@ func testEdgeInsertionDeletion(t *testing.T, v lnwire.GossipVersion) {
 
 	// Ensure that both policies are returned as unknown (nil) and that
 	// the edge info round-trips correctly.
-	dbEdge, e1, e2, err := graph.FetchChannelEdgesByID(chanID)
+	dbEdge, e1, e2, err := graph.FetchChannelEdgesByID(ctx, chanID)
 	require.NoError(t, err)
 	require.Nil(t, e1)
 	require.Nil(t, e2)
@@ -712,7 +712,7 @@ func testEdgeInsertionDeletion(t *testing.T, v lnwire.GossipVersion) {
 	// Assert that if the edge is a zombie, then FetchChannelEdgesByID
 	// still returns a populated models.ChannelEdgeInfo as its comment
 	// description promises.
-	edge, _, _, err := graph.FetchChannelEdgesByID(chanID)
+	edge, _, _, err := graph.FetchChannelEdgesByID(ctx, chanID)
 	require.ErrorIs(t, err, ErrZombieEdge)
 	require.NotNil(t, edge)
 
@@ -1195,7 +1195,9 @@ func testEdgeInfoUpdates(t *testing.T, v lnwire.GossipVersion) {
 
 	// With the edges inserted, perform some queries to ensure that they've
 	// been inserted properly.
-	dbEdgeInfo, dbEdge1, dbEdge2, err := graph.FetchChannelEdgesByID(chanID)
+	dbEdgeInfo, dbEdge1, dbEdge2, err := graph.FetchChannelEdgesByID(
+		ctx, chanID,
+	)
 	require.NoError(t, err, "unable to fetch channel by ID")
 	compareEdgePolicies(t, dbEdge1, edge1)
 	compareEdgePolicies(t, dbEdge2, edge2)
@@ -1578,7 +1580,9 @@ func testAddEdgeProof(t *testing.T, v lnwire.GossipVersion) {
 	require.NoError(t, graph.AddChannelEdge(ctx, edge1))
 
 	// Fetch the edge and assert that the proof is nil.
-	dbEdge, _, _, err := graph.FetchChannelEdgesByID(edge1.ChannelID)
+	dbEdge, _, _, err := graph.FetchChannelEdgesByID(
+		ctx, edge1.ChannelID,
+	)
 	require.NoError(t, err)
 	require.Nil(t, dbEdge.AuthProof)
 
@@ -1608,7 +1612,9 @@ func testAddEdgeProof(t *testing.T, v lnwire.GossipVersion) {
 	require.NoError(t, graph.AddEdgeProof(scid1, proof))
 
 	// Fetch the edge again and assert that the proof is now set.
-	dbEdge, _, _, err = graph.FetchChannelEdgesByID(edge1.ChannelID)
+	dbEdge, _, _, err = graph.FetchChannelEdgesByID(
+		ctx, edge1.ChannelID,
+	)
 	require.NoError(t, err)
 	require.NotNil(t, dbEdge.AuthProof)
 
@@ -1618,7 +1624,9 @@ func testAddEdgeProof(t *testing.T, v lnwire.GossipVersion) {
 	require.NoError(t, graph.AddChannelEdge(ctx, edge2))
 
 	// Fetch the edge and assert that the proof is set.
-	dbEdge2, _, _, err := graph.FetchChannelEdgesByID(edge2.ChannelID)
+	dbEdge2, _, _, err := graph.FetchChannelEdgesByID(
+		ctx, edge2.ChannelID,
+	)
 	require.NoError(t, err)
 	require.NotNil(t, dbEdge2.AuthProof)
 }
@@ -4486,7 +4494,9 @@ func TestEdgePolicyMissingMaxHTLC(t *testing.T) {
 	// we added is invalid according to the new format, it should be as we
 	// are not aware of the policy (indicated by the policy returned being
 	// nil)
-	dbEdgeInfo, dbEdge1, dbEdge2, err := graph.FetchChannelEdgesByID(chanID)
+	dbEdgeInfo, dbEdge1, dbEdge2, err := graph.FetchChannelEdgesByID(
+		ctx, chanID,
+	)
 	require.NoError(t, err, "unable to fetch channel by ID")
 
 	// The first edge should have a nil-policy returned
@@ -4498,7 +4508,9 @@ func TestEdgePolicyMissingMaxHTLC(t *testing.T) {
 	// policies then become fully populated.
 	require.NoError(t, graph.UpdateEdgePolicy(ctx, edge1))
 
-	dbEdgeInfo, dbEdge1, dbEdge2, err = graph.FetchChannelEdgesByID(chanID)
+	dbEdgeInfo, dbEdge1, dbEdge2, err = graph.FetchChannelEdgesByID(
+		ctx, chanID,
+	)
 	require.NoError(t, err, "unable to fetch channel by ID")
 	compareEdgePolicies(t, dbEdge1, edge1)
 	compareEdgePolicies(t, dbEdge2, edge2)

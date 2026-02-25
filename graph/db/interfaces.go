@@ -311,7 +311,8 @@ type Store interface { //nolint:interfacebloat
 	// zombie within the database. In this case, the ChannelEdgePolicy's
 	// will be nil, and the ChannelEdgeInfo will only include the public
 	// keys of each node.
-	FetchChannelEdgesByID(v lnwire.GossipVersion, chanID uint64) (
+	FetchChannelEdgesByID(ctx context.Context, v lnwire.GossipVersion,
+		chanID uint64) (
 		*models.ChannelEdgeInfo, *models.ChannelEdgePolicy,
 		*models.ChannelEdgePolicy, error)
 

@@ -2050,12 +2050,12 @@ func (s *SQLStore) DeleteChannelEdges(ctx context.Context,
 // the ChannelEdgeInfo will only include the public keys of each node.
 //
 // NOTE: part of the Store interface.
-func (s *SQLStore) FetchChannelEdgesByID(v lnwire.GossipVersion,
-	chanID uint64) (*models.ChannelEdgeInfo, *models.ChannelEdgePolicy,
+func (s *SQLStore) FetchChannelEdgesByID(ctx context.Context,
+	v lnwire.GossipVersion, chanID uint64) (
+	*models.ChannelEdgeInfo, *models.ChannelEdgePolicy,
 	*models.ChannelEdgePolicy, error) {
 
 	var (
-		ctx              = context.TODO()
 		edge             *models.ChannelEdgeInfo
 		policy1, policy2 *models.ChannelEdgePolicy
 		chanIDB          = channelIDToBytes(chanID)

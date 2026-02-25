@@ -1,6 +1,7 @@
 package graphdb
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"image/color"
@@ -412,7 +413,9 @@ func (c *ChannelGraph) addToTopologyChange(update *TopologyChange,
 		// We'll need to fetch the edge's information from the database
 		// in order to get the information concerning which nodes are
 		// being connected.
-		edgeInfo, _, _, err := c.FetchChannelEdgesByID(m.ChannelID)
+		edgeInfo, _, _, err := c.FetchChannelEdgesByID(
+			context.TODO(), m.ChannelID,
+		)
 		if err != nil {
 			return fmt.Errorf("unable fetch channel edge: %w", err)
 		}

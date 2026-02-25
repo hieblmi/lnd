@@ -739,12 +739,13 @@ func (c *ChannelGraph) FetchChannelEdgesByOutpoint(op *wire.OutPoint) (
 }
 
 // FetchChannelEdgesByID attempts to lookup directed edges by channel ID.
-func (c *ChannelGraph) FetchChannelEdgesByID(chanID uint64) (
+func (c *ChannelGraph) FetchChannelEdgesByID(ctx context.Context,
+	chanID uint64) (
 	*models.ChannelEdgeInfo, *models.ChannelEdgePolicy,
 	*models.ChannelEdgePolicy, error) {
 
 	return c.db.FetchChannelEdgesByID(
-		lnwire.GossipVersion1, chanID,
+		ctx, lnwire.GossipVersion1, chanID,
 	)
 }
 
@@ -812,11 +813,12 @@ func (c *VersionedGraph) FetchNode(ctx context.Context,
 }
 
 // FetchChannelEdgesByID attempts to lookup directed edges by channel ID.
-func (c *VersionedGraph) FetchChannelEdgesByID(chanID uint64) (
+func (c *VersionedGraph) FetchChannelEdgesByID(ctx context.Context,
+	chanID uint64) (
 	*models.ChannelEdgeInfo, *models.ChannelEdgePolicy,
 	*models.ChannelEdgePolicy, error) {
 
-	return c.db.FetchChannelEdgesByID(c.v, chanID)
+	return c.db.FetchChannelEdgesByID(ctx, c.v, chanID)
 }
 
 // FetchChannelEdgesByOutpoint attempts to lookup directed edges by funding

@@ -522,8 +522,16 @@ func AddInvoice(ctx context.Context, cfg *AddInvoiceConfig,
 		//nolint:ll
 		paths, err := blindedpath.BuildBlindedPaymentPaths(
 			&blindedpath.BuildBlindedPathCfg{
-				FindRoutes:              cfg.QueryBlindedRoutes,
-				FetchChannelEdgesByID:   cfg.Graph.FetchChannelEdgesByID,
+				FindRoutes: cfg.QueryBlindedRoutes,
+				FetchChannelEdgesByID: func(chanID uint64) (
+					*models.ChannelEdgeInfo,
+					*models.ChannelEdgePolicy,
+					*models.ChannelEdgePolicy, error) {
+
+					return cfg.Graph.FetchChannelEdgesByID(
+						context.TODO(), chanID,
+					)
+				},
 				FetchOurOpenChannels:    cfg.ChanDB.FetchAllOpenChannels,
 				PathID:                  paymentAddr[:],
 				ValueMsat:               invoice.Value,
@@ -790,9 +798,16 @@ func newSelectHopHintsCfg(invoicesCfg *AddInvoiceConfig,
 		FetchAllChannels:      invoicesCfg.ChanDB.FetchAllChannels,
 		IsChannelActive:       invoicesCfg.IsChannelActive,
 		IsPublicNode:          invoicesCfg.Graph.IsPublicNode,
-		FetchChannelEdgesByID: invoicesCfg.Graph.FetchChannelEdgesByID,
-		GetAlias:              invoicesCfg.GetAlias,
-		MaxHopHints:           maxHopHints,
+		FetchChannelEdgesByID: func(chanID uint64) (
+			*models.ChannelEdgeInfo, *models.ChannelEdgePolicy,
+			*models.ChannelEdgePolicy, error) {
+
+			return invoicesCfg.Graph.FetchChannelEdgesByID(
+				context.TODO(), chanID,
+			)
+		},
+		GetAlias:    invoicesCfg.GetAlias,
+		MaxHopHints: maxHopHints,
 	}
 }
 

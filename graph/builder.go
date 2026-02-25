@@ -1259,7 +1259,9 @@ func (b *Builder) GetChannelByID(chanID lnwire.ShortChannelID) (
 	*models.ChannelEdgePolicy,
 	*models.ChannelEdgePolicy, error) {
 
-	return b.cfg.Graph.FetchChannelEdgesByID(chanID.ToUint64())
+	return b.cfg.Graph.FetchChannelEdgesByID(
+		context.TODO(), chanID.ToUint64(),
+	)
 }
 
 // FetchNode attempts to look up a target node by its identity public

@@ -1397,7 +1397,7 @@ func newServer(ctx context.Context, cfg *Config, listenAddrs []net.Addr,
 		*models.ChannelEdgePolicy, error) {
 
 		info, e1, e2, err := s.graphDB.FetchChannelEdgesByID(
-			scid.ToUint64(),
+			context.TODO(), scid.ToUint64(),
 		)
 		if errors.Is(err, graphdb.ErrEdgeNotFound) {
 			// This is unlikely but there is a slim chance of this
