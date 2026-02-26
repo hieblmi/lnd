@@ -1,6 +1,8 @@
 package invoicesrpc
 
 import (
+	"context"
+
 	"github.com/lightningnetwork/lnd/graph/db/models"
 )
 
@@ -9,11 +11,12 @@ type GraphSource interface {
 	// FetchChannelEdgesByID attempts to look up the two directed edges for
 	// the channel identified by the channel ID. If the channel can't be
 	// found, then graphdb.ErrEdgeNotFound is returned.
-	FetchChannelEdgesByID(chanID uint64) (*models.ChannelEdgeInfo,
-		*models.ChannelEdgePolicy, *models.ChannelEdgePolicy, error)
+	FetchChannelEdgesByID(ctx context.Context, chanID uint64) (
+		*models.ChannelEdgeInfo, *models.ChannelEdgePolicy,
+		*models.ChannelEdgePolicy, error)
 
 	// IsPublicNode is a helper method that determines whether the node with
 	// the given public key is seen as a public node in the graph from the
 	// graph's source node's point of view.
-	IsPublicNode(pubKey [33]byte) (bool, error)
+	IsPublicNode(ctx context.Context, pubKey [33]byte) (bool, error)
 }

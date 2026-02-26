@@ -496,9 +496,10 @@ func forEachChannel(db kvdb.Backend, cb func(*models.ChannelEdgeInfo,
 //
 // NOTE: this method is like ForEachChannel but fetches only the data required
 // for the graph cache.
-func (c *KVStore) ForEachChannelCacheable(v lnwire.GossipVersion,
-	cb func(*models.CachedEdgeInfo, *models.CachedEdgePolicy,
-		*models.CachedEdgePolicy) error, reset func()) error {
+func (c *KVStore) ForEachChannelCacheable(_ context.Context,
+	v lnwire.GossipVersion, cb func(*models.CachedEdgeInfo,
+		*models.CachedEdgePolicy, *models.CachedEdgePolicy) error,
+	reset func()) error {
 
 	if v != lnwire.GossipVersion1 {
 		return ErrVersionNotSupportedForKVDB
@@ -669,9 +670,9 @@ func (c *KVStore) fetchNodeFeatures(tx kvdb.RTx,
 // Unknown policies are passed into the callback as nil values.
 //
 // NOTE: this is part of the graphdb.NodeTraverser interface.
-func (c *KVStore) ForEachNodeDirectedChannel(v lnwire.GossipVersion,
-	nodePub route.Vertex, cb func(channel *DirectedChannel) error,
-	reset func()) error {
+func (c *KVStore) ForEachNodeDirectedChannel(_ context.Context,
+	v lnwire.GossipVersion, nodePub route.Vertex,
+	cb func(channel *DirectedChannel) error, reset func()) error {
 
 	if v != lnwire.GossipVersion1 {
 		return ErrVersionNotSupportedForKVDB
@@ -684,7 +685,7 @@ func (c *KVStore) ForEachNodeDirectedChannel(v lnwire.GossipVersion,
 // known for the node, an empty feature vector is returned.
 //
 // NOTE: this is part of the graphdb.NodeTraverser interface.
-func (c *KVStore) FetchNodeFeatures(v lnwire.GossipVersion,
+func (c *KVStore) FetchNodeFeatures(_ context.Context, v lnwire.GossipVersion,
 	nodePub route.Vertex) (*lnwire.FeatureVector, error) {
 
 	if v != lnwire.GossipVersion1 {
@@ -773,7 +774,7 @@ func (c *KVStore) ForEachNodeCached(ctx context.Context, withAddrs bool,
 // A channel is disabled when two of the associated ChanelEdgePolicies
 // have their disabled bit on.
 func (c *KVStore) DisabledChannelIDs(
-	v lnwire.GossipVersion) ([]uint64, error) {
+	_ context.Context, v lnwire.GossipVersion) ([]uint64, error) {
 
 	if v != lnwire.GossipVersion1 {
 		return nil, ErrVersionNotSupportedForKVDB
@@ -1317,7 +1318,7 @@ func (c *KVStore) addChannelEdge(tx kvdb.RwTx,
 // the edge was updated for both directed edges are returned along with the
 // boolean. If it is not found, then the zombie index is checked and its
 // result is returned as the second boolean.
-func (c *KVStore) HasV1ChannelEdge(
+func (c *KVStore) HasV1ChannelEdge(_ context.Context,
 	chanID uint64) (time.Time, time.Time, bool, bool, error) {
 
 	var (
@@ -1426,20 +1427,20 @@ func (c *KVStore) HasV1ChannelEdge(
 // passed channel ID and gossip version, and false otherwise. If it is not
 // found, then the zombie index is checked and its result is returned as the
 // second boolean.
-func (c *KVStore) HasChannelEdge(v lnwire.GossipVersion,
+func (c *KVStore) HasChannelEdge(ctx context.Context, v lnwire.GossipVersion,
 	chanID uint64) (bool, bool, error) {
 
 	if v != lnwire.GossipVersion1 {
 		return false, false, ErrVersionNotSupportedForKVDB
 	}
 
-	_, _, exists, isZombie, err := c.HasV1ChannelEdge(chanID)
+	_, _, exists, isZombie, err := c.HasV1ChannelEdge(ctx, chanID)
 
 	return exists, isZombie, err
 }
 
 // AddEdgeProof sets the proof of an existing edge in the graph database.
-func (c *KVStore) AddEdgeProof(chanID lnwire.ShortChannelID,
+func (c *KVStore) AddEdgeProof(_ context.Context, chanID lnwire.ShortChannelID,
 	proof *models.ChannelAuthProof) error {
 
 	// We only support v1 channel proofs in the KVStore.
@@ -1491,7 +1492,7 @@ const (
 // with the current UTXO state. A slice of channels that have been closed by
 // the target block along with any pruned nodes are returned if the function
 // succeeds without error.
-func (c *KVStore) PruneGraph(spentOutputs []*wire.OutPoint,
+func (c *KVStore) PruneGraph(_ context.Context, spentOutputs []*wire.OutPoint,
 	blockHash *chainhash.Hash, blockHeight uint32) (
 	[]*models.ChannelEdgeInfo, []route.Vertex, error) {
 
@@ -1619,7 +1620,7 @@ func (c *KVStore) PruneGraph(spentOutputs []*wire.OutPoint,
 // any nodes from the channel graph that are currently unconnected. This ensure
 // that we only maintain a graph of reachable nodes. In the event that a pruned
 // node gains more channels, it will be re-added back to the graph.
-func (c *KVStore) PruneGraphNodes() ([]route.Vertex, error) {
+func (c *KVStore) PruneGraphNodes(_ context.Context) ([]route.Vertex, error) {
 	var prunedNodes []route.Vertex
 	err := kvdb.Update(c.db, func(tx kvdb.RwTx) error {
 		nodes := tx.ReadWriteBucket(nodeBucket)
@@ -1759,8 +1760,8 @@ func (c *KVStore) pruneGraphNodes(nodes kvdb.RwBucket,
 // set to the last prune height valid for the remaining chain.
 // Channels that were removed from the graph resulting from the
 // disconnected block are returned.
-func (c *KVStore) DisconnectBlockAtHeight(height uint32) (
-	[]*models.ChannelEdgeInfo, error) {
+func (c *KVStore) DisconnectBlockAtHeight(_ context.Context,
+	height uint32) ([]*models.ChannelEdgeInfo, error) {
 
 	// Every channel having a ShortChannelID starting at 'height'
 	// will no longer be confirmed.
@@ -1886,7 +1887,7 @@ func (c *KVStore) DisconnectBlockAtHeight(height uint32) (
 // used to prune channels in the graph. Knowing the "prune tip" allows callers
 // to tell if the graph is currently in sync with the current best known UTXO
 // state.
-func (c *KVStore) PruneTip() (*chainhash.Hash, uint32, error) {
+func (c *KVStore) PruneTip(_ context.Context) (*chainhash.Hash, uint32, error) {
 	var (
 		tipHash   chainhash.Hash
 		tipHeight uint32
@@ -1933,8 +1934,9 @@ func (c *KVStore) PruneTip() (*chainhash.Hash, uint32, error) {
 // that we require the node that failed to send the fresh update to be the one
 // that resurrects the channel from its zombie state. The markZombie bool
 // denotes whether or not to mark the channel as a zombie.
-func (c *KVStore) DeleteChannelEdges(v lnwire.GossipVersion,
-	strictZombiePruning, markZombie bool, chanIDs ...uint64) (
+func (c *KVStore) DeleteChannelEdges(_ context.Context,
+	v lnwire.GossipVersion, strictZombiePruning, markZombie bool,
+	chanIDs ...uint64) (
 	[]*models.ChannelEdgeInfo, error) {
 
 	if v != lnwire.GossipVersion1 {
@@ -2004,7 +2006,7 @@ func (c *KVStore) DeleteChannelEdges(v lnwire.GossipVersion,
 // ChannelID attempt to lookup the 8-byte compact channel ID which maps to the
 // passed channel point (outpoint). If the passed channel doesn't exist within
 // the database, then ErrEdgeNotFound is returned.
-func (c *KVStore) ChannelID(v lnwire.GossipVersion,
+func (c *KVStore) ChannelID(_ context.Context, v lnwire.GossipVersion,
 	chanPoint *wire.OutPoint) (uint64, error) {
 
 	if v != lnwire.GossipVersion1 {
@@ -2377,7 +2379,8 @@ func (c *KVStore) fetchNextChanUpdateBatch(
 
 // ChanUpdatesInHorizon returns all the known channel edges which have at least
 // one edge that has an update timestamp within the specified horizon.
-func (c *KVStore) ChanUpdatesInHorizon(startTime, endTime time.Time,
+func (c *KVStore) ChanUpdatesInHorizon(_ context.Context,
+	startTime, endTime time.Time,
 	opts ...IteratorOption) iter.Seq2[ChannelEdge, error] {
 
 	cfg := defaultIteratorConfig()
@@ -2627,7 +2630,7 @@ func (c *KVStore) fetchNextNodeBatch(
 
 // NodeUpdatesInHorizon returns all the known lightning node which have an
 // update timestamp within the passed range.
-func (c *KVStore) NodeUpdatesInHorizon(startTime,
+func (c *KVStore) NodeUpdatesInHorizon(_ context.Context, startTime,
 	endTime time.Time,
 	opts ...IteratorOption) iter.Seq2[*models.Node, error] {
 
@@ -2676,8 +2679,8 @@ func (c *KVStore) NodeUpdatesInHorizon(startTime,
 // passed in. This method can be used by callers to determine the set of
 // channels another peer knows of that we don't. The ChannelUpdateInfos for the
 // known zombies is also returned.
-func (c *KVStore) FilterKnownChanIDs(chansInfo []ChannelUpdateInfo) ([]uint64,
-	[]ChannelUpdateInfo, error) {
+func (c *KVStore) FilterKnownChanIDs(_ context.Context,
+	chansInfo []ChannelUpdateInfo) ([]uint64, []ChannelUpdateInfo, error) {
 
 	var (
 		newChanIDs   []uint64
@@ -2815,7 +2818,7 @@ type BlockChannelRange struct {
 // up after a period of time offline. If withTimestamps is true then the
 // timestamp info of the latest received channel update messages of the channel
 // will be included in the response.
-func (c *KVStore) FilterChannelRange(startHeight,
+func (c *KVStore) FilterChannelRange(_ context.Context, startHeight,
 	endHeight uint32, withTimestamps bool) ([]BlockChannelRange, error) {
 
 	startChanID := &lnwire.ShortChannelID{
@@ -2960,7 +2963,7 @@ func (c *KVStore) FilterChannelRange(startHeight,
 // skipped and the result will contain only those edges that exist at the time
 // of the query. This can be used to respond to peer queries that are seeking to
 // fill in gaps in their view of the channel graph.
-func (c *KVStore) FetchChanInfos(v lnwire.GossipVersion,
+func (c *KVStore) FetchChanInfos(_ context.Context, v lnwire.GossipVersion,
 	chanIDs []uint64) ([]ChannelEdge, error) {
 
 	if v != lnwire.GossipVersion1 {
@@ -3896,8 +3899,9 @@ func computeEdgePolicyKeys(info *models.ChannelEdgeInfo) ([]byte, []byte) {
 // found, then ErrEdgeNotFound is returned. A struct which houses the general
 // information for the channel itself is returned as well as two structs that
 // contain the routing policies for the channel in either direction.
-func (c *KVStore) FetchChannelEdgesByOutpoint(v lnwire.GossipVersion,
-	op *wire.OutPoint) (*models.ChannelEdgeInfo, *models.ChannelEdgePolicy,
+func (c *KVStore) FetchChannelEdgesByOutpoint(_ context.Context,
+	v lnwire.GossipVersion, op *wire.OutPoint) (
+	*models.ChannelEdgeInfo, *models.ChannelEdgePolicy,
 	*models.ChannelEdgePolicy, error) {
 
 	var (
@@ -3986,8 +3990,9 @@ func (c *KVStore) FetchChannelEdgesByOutpoint(v lnwire.GossipVersion,
 // ErrZombieEdge an be returned if the edge is currently marked as a zombie
 // within the database. In this case, the ChannelEdgePolicy's will be nil, and
 // the ChannelEdgeInfo will only include the public keys of each node.
-func (c *KVStore) FetchChannelEdgesByID(v lnwire.GossipVersion,
-	chanID uint64) (*models.ChannelEdgeInfo, *models.ChannelEdgePolicy,
+func (c *KVStore) FetchChannelEdgesByID(_ context.Context,
+	v lnwire.GossipVersion, chanID uint64) (
+	*models.ChannelEdgeInfo, *models.ChannelEdgePolicy,
 	*models.ChannelEdgePolicy, error) {
 
 	if v != lnwire.GossipVersion1 {
@@ -4098,8 +4103,8 @@ func (c *KVStore) FetchChannelEdgesByID(v lnwire.GossipVersion,
 // IsPublicNode is a helper method that determines whether the node with the
 // given public key is seen as a public node in the graph from the graph's
 // source node's point of view.
-func (c *KVStore) IsPublicNode(v lnwire.GossipVersion, pubKey [33]byte) (bool,
-	error) {
+func (c *KVStore) IsPublicNode(_ context.Context, v lnwire.GossipVersion,
+	pubKey [33]byte) (bool, error) {
 
 	if v != lnwire.GossipVersion1 {
 		return false, ErrVersionNotSupportedForKVDB
@@ -4175,7 +4180,7 @@ func (e *EdgePoint) String() string {
 // within the known channel graph. The set of UTXO's (along with their scripts)
 // returned are the ones that need to be watched on chain to detect channel
 // closes on the resident blockchain.
-func (c *KVStore) ChannelView() ([]EdgePoint, error) {
+func (c *KVStore) ChannelView(_ context.Context) ([]EdgePoint, error) {
 	var edgePoints []EdgePoint
 	if err := kvdb.View(c.db, func(tx kvdb.RTx) error {
 		// We're going to iterate over the entire channel index, so
@@ -4241,7 +4246,7 @@ func (c *KVStore) ChannelView() ([]EdgePoint, error) {
 // MarkEdgeZombie attempts to mark a channel identified by its channel ID as a
 // zombie. This method is used on an ad-hoc basis, when channels need to be
 // marked as zombies outside the normal pruning cycle.
-func (c *KVStore) MarkEdgeZombie(chanID uint64,
+func (c *KVStore) MarkEdgeZombie(_ context.Context, chanID uint64,
 	pubKey1, pubKey2 [33]byte) error {
 
 	c.cacheMu.Lock()
@@ -4287,7 +4292,7 @@ func markEdgeZombie(zombieIndex kvdb.RwBucket, chanID uint64, pubKey1,
 }
 
 // MarkEdgeLive clears an edge from our zombie index, deeming it as live.
-func (c *KVStore) MarkEdgeLive(chanID uint64) error {
+func (c *KVStore) MarkEdgeLive(_ context.Context, chanID uint64) error {
 	c.cacheMu.Lock()
 	defer c.cacheMu.Unlock()
 
@@ -4342,7 +4347,7 @@ func (c *KVStore) markEdgeLiveUnsafe(tx kvdb.RwTx, chanID uint64) error {
 // IsZombieEdge returns whether the edge is considered zombie. If it is a
 // zombie, then the two node public keys corresponding to this edge are also
 // returned.
-func (c *KVStore) IsZombieEdge(v lnwire.GossipVersion,
+func (c *KVStore) IsZombieEdge(_ context.Context, v lnwire.GossipVersion,
 	chanID uint64) (bool, [33]byte, [33]byte, error) {
 
 	var (
@@ -4403,7 +4408,7 @@ func isZombieEdge(zombieIndex kvdb.RBucket,
 }
 
 // NumZombies returns the current number of zombie channels in the graph.
-func (c *KVStore) NumZombies() (uint64, error) {
+func (c *KVStore) NumZombies(_ context.Context) (uint64, error) {
 	var numZombies uint64
 	err := kvdb.View(c.db, func(tx kvdb.RTx) error {
 		edges := tx.ReadBucket(edgeBucket)
@@ -4432,7 +4437,9 @@ func (c *KVStore) NumZombies() (uint64, error) {
 // PutClosedScid stores a SCID for a closed channel in the database. This is so
 // that we can ignore channel announcements that we know to be closed without
 // having to validate them and fetch a block.
-func (c *KVStore) PutClosedScid(scid lnwire.ShortChannelID) error {
+func (c *KVStore) PutClosedScid(_ context.Context,
+	scid lnwire.ShortChannelID) error {
+
 	return kvdb.Update(c.db, func(tx kvdb.RwTx) error {
 		closedScids, err := tx.CreateTopLevelBucket(closedScidBucket)
 		if err != nil {
@@ -4449,7 +4456,9 @@ func (c *KVStore) PutClosedScid(scid lnwire.ShortChannelID) error {
 // IsClosedScid checks whether a channel identified by the passed in scid is
 // closed. This helps avoid having to perform expensive validation checks.
 // TODO: Add an LRU cache to cut down on disc reads.
-func (c *KVStore) IsClosedScid(scid lnwire.ShortChannelID) (bool, error) {
+func (c *KVStore) IsClosedScid(_ context.Context,
+	scid lnwire.ShortChannelID) (bool, error) {
+
 	var isClosed bool
 	err := kvdb.View(c.db, func(tx kvdb.RTx) error {
 		closedScids := tx.ReadBucket(closedScidBucket)
@@ -4478,8 +4487,8 @@ func (c *KVStore) IsClosedScid(scid lnwire.ShortChannelID) (bool, error) {
 
 // GraphSession will provide the call-back with access to a NodeTraverser
 // instance which can be used to perform queries against the channel graph.
-func (c *KVStore) GraphSession(cb func(graph NodeTraverser) error,
-	reset func()) error {
+func (c *KVStore) GraphSession(_ context.Context,
+	cb func(graph NodeTraverser) error, reset func()) error {
 
 	return c.db.View(func(tx walletdb.ReadTx) error {
 		return cb(&nodeTraverserSession{
@@ -4501,8 +4510,8 @@ type nodeTraverserSession struct {
 //
 // NOTE: Part of the NodeTraverser interface.
 func (c *nodeTraverserSession) ForEachNodeDirectedChannel(
-	nodePub route.Vertex, cb func(channel *DirectedChannel) error,
-	_ func()) error {
+	_ context.Context, nodePub route.Vertex,
+	cb func(channel *DirectedChannel) error, _ func()) error {
 
 	return c.db.forEachNodeDirectedChannel(c.tx, nodePub, cb, func() {})
 }
@@ -4511,7 +4520,8 @@ func (c *nodeTraverserSession) ForEachNodeDirectedChannel(
 // unknown, assume no additional features are supported.
 //
 // NOTE: Part of the NodeTraverser interface.
-func (c *nodeTraverserSession) FetchNodeFeatures(nodePub route.Vertex) (
+func (c *nodeTraverserSession) FetchNodeFeatures(_ context.Context,
+	nodePub route.Vertex) (
 	*lnwire.FeatureVector, error) {
 
 	return c.db.fetchNodeFeatures(c.tx, nodePub)

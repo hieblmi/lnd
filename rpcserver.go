@@ -716,7 +716,9 @@ func (r *rpcServer) addDeps(ctx context.Context, s *server,
 		FetchChannelCapacity: func(chanID uint64) (btcutil.Amount,
 			error) {
 
-			info, _, _, err := graph.FetchChannelEdgesByID(chanID)
+			info, _, _, err := graph.FetchChannelEdgesByID(
+				ctx, chanID,
+			)
 			if err != nil {
 				return 0, err
 			}
@@ -734,7 +736,7 @@ func (r *rpcServer) addDeps(ctx context.Context, s *server,
 			route.Vertex, error) {
 
 			info, _, _, err := graph.FetchChannelEdgesByID(
-				chanID,
+				ctx, chanID,
 			)
 			if err != nil {
 				return route.Vertex{}, route.Vertex{},
@@ -3202,7 +3204,7 @@ func abandonChanFromGraph(chanGraph *graphdb.VersionedGraph,
 	// First, we'll obtain the channel ID. If we can't locate this, then
 	// it's the case that the channel may have already been removed from
 	// the graph, so we'll return a nil error.
-	chanID, err := chanGraph.ChannelID(chanPoint)
+	chanID, err := chanGraph.ChannelID(context.TODO(), chanPoint)
 	switch {
 	case errors.Is(err, graphdb.ErrEdgeNotFound):
 		return nil
@@ -3212,7 +3214,7 @@ func abandonChanFromGraph(chanGraph *graphdb.VersionedGraph,
 
 	// If the channel ID is still in the graph, then that means the channel
 	// is still open, so we'll now move to purge it from the graph.
-	return chanGraph.DeleteChannelEdges(false, true, chanID)
+	return chanGraph.DeleteChannelEdges(context.TODO(), false, true, chanID)
 }
 
 // abandonChan removes a channel from the database, graph and contract court.
@@ -7117,7 +7119,7 @@ func (r *rpcServer) GetNodeMetrics(ctx context.Context,
 // uniquely identify the location of transaction's funding output within the
 // blockchain. The former is an 8-byte integer, while the latter is a string
 // formatted as funding_txid:output_index.
-func (r *rpcServer) GetChanInfo(_ context.Context,
+func (r *rpcServer) GetChanInfo(ctx context.Context,
 	in *lnrpc.ChanInfoRequest) (*lnrpc.ChannelEdge, error) {
 
 	graph := r.server.graphDB
@@ -7131,7 +7133,7 @@ func (r *rpcServer) GetChanInfo(_ context.Context,
 	switch {
 	case in.ChanId != 0:
 		edgeInfo, edge1, edge2, err = graph.FetchChannelEdgesByID(
-			in.ChanId,
+			ctx, in.ChanId,
 		)
 
 	case in.ChanPoint != "":
@@ -7141,7 +7143,7 @@ func (r *rpcServer) GetChanInfo(_ context.Context,
 			return nil, err
 		}
 		edgeInfo, edge1, edge2, err = graph.FetchChannelEdgesByOutpoint(
-			chanPoint,
+			ctx, chanPoint,
 		)
 
 	default:
@@ -7387,7 +7389,7 @@ func (r *rpcServer) GetNetworkInfo(ctx context.Context,
 	}
 
 	// Query the graph for the current number of zombie channels.
-	numZombies, err := graph.NumZombies()
+	numZombies, err := graph.NumZombies(ctx)
 	if err != nil {
 		return nil, err
 	}

@@ -1,6 +1,7 @@
 package routing
 
 import (
+	"context"
 	"math"
 
 	"github.com/btcsuite/btcd/btcutil"
@@ -116,7 +117,7 @@ func (u *nodeEdgeUnifier) addGraphPolicies(g Graph) error {
 
 	// Iterate over all channels of the to node.
 	err := g.ForEachNodeDirectedChannel(
-		u.toNode, cb, func() {
+		context.TODO(), u.toNode, cb, func() {
 			channels = nil
 		},
 	)

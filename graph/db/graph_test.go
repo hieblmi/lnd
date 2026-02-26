@@ -298,13 +298,13 @@ func testNodeInsertionAndDeletion(t *testing.T, v lnwire.GossipVersion) {
 
 	// Check that the node's features are fetched correctly. This check
 	// will use the graph cache to fetch the features.
-	features, err := graph.FetchNodeFeatures(node.PubKeyBytes)
+	features, err := graph.FetchNodeFeatures(ctx, node.PubKeyBytes)
 	require.NoError(t, err)
 	require.Equal(t, testFeatures, features)
 
 	// Check that the node's features are fetched correctly. This check
 	// will check the database directly.
-	features, err = graph.FetchNodeFeatures(node.PubKeyBytes)
+	features, err = graph.FetchNodeFeatures(ctx, node.PubKeyBytes)
 	require.NoError(t, err)
 	require.Equal(t, testFeatures, features)
 
@@ -643,7 +643,7 @@ func testEdgeInsertionDeletion(t *testing.T, v lnwire.GossipVersion) {
 
 	// Ensure that both policies are returned as unknown (nil) and that
 	// the edge info round-trips correctly.
-	dbEdge, e1, e2, err := graph.FetchChannelEdgesByID(chanID)
+	dbEdge, e1, e2, err := graph.FetchChannelEdgesByID(ctx, chanID)
 	require.NoError(t, err)
 	require.Nil(t, e1)
 	require.Nil(t, e2)
@@ -693,34 +693,38 @@ func testEdgeInsertionDeletion(t *testing.T, v lnwire.GossipVersion) {
 	}
 
 	// Also verify fetching by outpoint returns the same data.
-	dbEdge2, _, _, err := graph.FetchChannelEdgesByOutpoint(&outpoint)
+	dbEdge2, _, _, err := graph.FetchChannelEdgesByOutpoint(
+		ctx, &outpoint,
+	)
 	require.NoError(t, err)
 	require.Equal(t, dbEdge.ChannelID, dbEdge2.ChannelID)
 
 	// Next, attempt to delete the edge from the database, again this
 	// should proceed without any issues.
-	require.NoError(t, graph.DeleteChannelEdges(false, true, chanID))
+	require.NoError(t, graph.DeleteChannelEdges(
+		ctx, false, true, chanID,
+	))
 	assertNoEdge(t, graph.ChannelGraph, chanID)
 
 	// Ensure that any query attempts to lookup the delete channel edge are
 	// properly deleted.
-	_, _, _, err = graph.FetchChannelEdgesByOutpoint(&outpoint)
+	_, _, _, err = graph.FetchChannelEdgesByOutpoint(ctx, &outpoint)
 	require.ErrorIs(t, err, ErrEdgeNotFound)
 
 	// Assert that if the edge is a zombie, then FetchChannelEdgesByID
 	// still returns a populated models.ChannelEdgeInfo as its comment
 	// description promises.
-	edge, _, _, err := graph.FetchChannelEdgesByID(chanID)
+	edge, _, _, err := graph.FetchChannelEdgesByID(ctx, chanID)
 	require.ErrorIs(t, err, ErrZombieEdge)
 	require.NotNil(t, edge)
 
-	isZombie, _, _, err := graph.IsZombieEdge(chanID)
+	isZombie, _, _, err := graph.IsZombieEdge(ctx, chanID)
 	require.NoError(t, err)
 	require.True(t, isZombie)
 
 	// Finally, attempt to delete a (now) non-existent edge within the
 	// database, this should result in an error.
-	err = graph.DeleteChannelEdges(false, true, chanID)
+	err = graph.DeleteChannelEdges(ctx, false, true, chanID)
 	require.ErrorIs(t, err, ErrEdgeNotFound)
 }
 
@@ -859,12 +863,12 @@ func TestDisconnectBlockAtHeight(t *testing.T) {
 
 	// Prune the graph a few times to make sure we have entries in the
 	// prune log.
-	_, err := graph.PruneGraph(spendOutputs, &blockHash, 155)
+	_, err := graph.PruneGraph(ctx, spendOutputs, &blockHash, 155)
 	require.NoError(t, err, "unable to prune graph")
 	var blockHash2 chainhash.Hash
 	copy(blockHash2[:], bytes.Repeat([]byte{2}, 32))
 
-	_, err = graph.PruneGraph(spendOutputs, &blockHash2, 156)
+	_, err = graph.PruneGraph(ctx, spendOutputs, &blockHash2, 156)
 	require.NoError(t, err, "unable to prune graph")
 
 	// We'll create 3 almost identical edges, so first create a helper
@@ -901,7 +905,7 @@ func TestDisconnectBlockAtHeight(t *testing.T) {
 
 	// Call DisconnectBlockAtHeight, which should prune every channel
 	// that has a funding height of 'height' or greater.
-	removed, err := graph.DisconnectBlockAtHeight(uint32(height))
+	removed, err := graph.DisconnectBlockAtHeight(ctx, height)
 	require.NoError(t, err)
 	assertNoEdge(t, graph, edgeInfo.ChannelID)
 	assertNoEdge(t, graph, edgeInfo2.ChannelID)
@@ -914,13 +918,13 @@ func TestDisconnectBlockAtHeight(t *testing.T) {
 
 	// The two first edges should be removed from the db.
 	has, isZombie, err := graph.HasChannelEdge(
-		lnwire.GossipVersion1, edgeInfo.ChannelID,
+		ctx, lnwire.GossipVersion1, edgeInfo.ChannelID,
 	)
 	require.NoError(t, err, "unable to query for edge")
 	require.False(t, has)
 	require.False(t, isZombie)
 	has, isZombie, err = graph.HasChannelEdge(
-		lnwire.GossipVersion1, edgeInfo2.ChannelID,
+		ctx, lnwire.GossipVersion1, edgeInfo2.ChannelID,
 	)
 	require.NoError(t, err, "unable to query for edge")
 	require.False(t, has)
@@ -928,7 +932,7 @@ func TestDisconnectBlockAtHeight(t *testing.T) {
 
 	// Edge 3 should not be removed.
 	has, isZombie, err = graph.HasChannelEdge(
-		lnwire.GossipVersion1, edgeInfo3.ChannelID,
+		ctx, lnwire.GossipVersion1, edgeInfo3.ChannelID,
 	)
 	require.NoError(t, err, "unable to query for edge")
 	require.True(t, has)
@@ -936,7 +940,7 @@ func TestDisconnectBlockAtHeight(t *testing.T) {
 
 	// PruneTip should be set to the blockHash we specified for the block
 	// at height 155.
-	hash, h, err := graph.PruneTip()
+	hash, h, err := graph.PruneTip(ctx)
 	require.NoError(t, err, "unable to get prune tip")
 	require.True(t, blockHash.IsEqual(hash))
 	require.Equal(t, h, height-1)
@@ -1180,20 +1184,22 @@ func testEdgeInfoUpdates(t *testing.T, v lnwire.GossipVersion) {
 
 	// Check for existence of the edge within the database, it should be
 	// found.
-	found, isZombie, err := graph.HasChannelEdge(chanID)
+	found, isZombie, err := graph.HasChannelEdge(ctx, chanID)
 	require.NoError(t, err, "unable to query for edge")
 	require.True(t, found)
 	require.False(t, isZombie)
 
 	// We should also be able to retrieve the channelID only knowing the
 	// channel point of the channel.
-	dbChanID, err := graph.ChannelID(&outpoint)
+	dbChanID, err := graph.ChannelID(ctx, &outpoint)
 	require.NoError(t, err, "unable to retrieve channel ID")
 	require.Equal(t, chanID, dbChanID)
 
 	// With the edges inserted, perform some queries to ensure that they've
 	// been inserted properly.
-	dbEdgeInfo, dbEdge1, dbEdge2, err := graph.FetchChannelEdgesByID(chanID)
+	dbEdgeInfo, dbEdge1, dbEdge2, err := graph.FetchChannelEdgesByID(
+		ctx, chanID,
+	)
 	require.NoError(t, err, "unable to fetch channel by ID")
 	compareEdgePolicies(t, dbEdge1, edge1)
 	compareEdgePolicies(t, dbEdge2, edge2)
@@ -1202,7 +1208,7 @@ func testEdgeInfoUpdates(t *testing.T, v lnwire.GossipVersion) {
 	// Next, attempt to query the channel edges according to the outpoint
 	// of the channel.
 	dbEdgeInfo, dbEdge1, dbEdge2, err = graph.FetchChannelEdgesByOutpoint(
-		&outpoint,
+		ctx, &outpoint,
 	)
 	require.NoError(t, err, "unable to fetch channel by ID")
 	compareEdgePolicies(t, dbEdge1, edge1)
@@ -1576,7 +1582,9 @@ func testAddEdgeProof(t *testing.T, v lnwire.GossipVersion) {
 	require.NoError(t, graph.AddChannelEdge(ctx, edge1))
 
 	// Fetch the edge and assert that the proof is nil.
-	dbEdge, _, _, err := graph.FetchChannelEdgesByID(edge1.ChannelID)
+	dbEdge, _, _, err := graph.FetchChannelEdgesByID(
+		ctx, edge1.ChannelID,
+	)
 	require.NoError(t, err)
 	require.Nil(t, dbEdge.AuthProof)
 
@@ -1603,10 +1611,12 @@ func testAddEdgeProof(t *testing.T, v lnwire.GossipVersion) {
 
 	// Now add just the proof via AddEdgeProof.
 	scid1 := lnwire.NewShortChanIDFromInt(edge1.ChannelID)
-	require.NoError(t, graph.AddEdgeProof(scid1, proof))
+	require.NoError(t, graph.AddEdgeProof(ctx, scid1, proof))
 
 	// Fetch the edge again and assert that the proof is now set.
-	dbEdge, _, _, err = graph.FetchChannelEdgesByID(edge1.ChannelID)
+	dbEdge, _, _, err = graph.FetchChannelEdgesByID(
+		ctx, edge1.ChannelID,
+	)
 	require.NoError(t, err)
 	require.NotNil(t, dbEdge.AuthProof)
 
@@ -1616,7 +1626,9 @@ func testAddEdgeProof(t *testing.T, v lnwire.GossipVersion) {
 	require.NoError(t, graph.AddChannelEdge(ctx, edge2))
 
 	// Fetch the edge and assert that the proof is set.
-	dbEdge2, _, _, err := graph.FetchChannelEdgesByID(edge2.ChannelID)
+	dbEdge2, _, _, err := graph.FetchChannelEdgesByID(
+		ctx, edge2.ChannelID,
+	)
 	require.NoError(t, err)
 	require.NotNil(t, dbEdge2.AuthProof)
 }
@@ -1875,7 +1887,7 @@ func testGraphTraversalCacheable(t *testing.T, v lnwire.GossipVersion) {
 		// Query the ChannelGraph which uses the cache to iterate
 		// through the channels for each node.
 		err = graph.ChannelGraph.ForEachNodeDirectedChannel(
-			node, func(d *DirectedChannel) error {
+			ctx, node, func(d *DirectedChannel) error {
 				delete(chanIndex, d.ChannelID)
 				return nil
 			}, func() {},
@@ -1884,7 +1896,7 @@ func testGraphTraversalCacheable(t *testing.T, v lnwire.GossipVersion) {
 
 		// Now skip the cache and query the DB directly.
 		err = graph.db.ForEachNodeDirectedChannel(
-			v, node, func(d *DirectedChannel) error {
+			ctx, v, node, func(d *DirectedChannel) error {
 				delete(chanIndex2, d.ChannelID)
 				return nil
 			}, func() {},
@@ -2110,7 +2122,7 @@ func fillTestGraph(t testing.TB, graph *ChannelGraph, numNodes,
 func assertPruneTip(t *testing.T, graph *ChannelGraph,
 	blockHash *chainhash.Hash, blockHeight uint32) {
 
-	pruneHash, pruneHeight, err := graph.PruneTip()
+	pruneHash, pruneHeight, err := graph.PruneTip(t.Context())
 	require.NoError(t, err)
 	require.Equal(t, blockHash[:], pruneHash[:])
 	require.Equal(t, blockHeight, pruneHeight)
@@ -2262,7 +2274,7 @@ func TestGraphPruning(t *testing.T) {
 
 	// With all the channel points added, we'll consult the graph to ensure
 	// it has the same channel view as the one we just constructed.
-	channelView, err := graph.ChannelView()
+	channelView, err := graph.ChannelView(ctx)
 	require.NoError(t, err, "unable to get graph channel view")
 	assertChanViewEqual(t, channelView, edgePoints)
 
@@ -2275,7 +2287,9 @@ func TestGraphPruning(t *testing.T) {
 	copy(blockHash[:], bytes.Repeat([]byte{1}, 32))
 	blockHeight := uint32(1)
 	block := channelPoints[:2]
-	prunedChans, err := graph.PruneGraph(block, &blockHash, blockHeight)
+	prunedChans, err := graph.PruneGraph(
+		ctx, block, &blockHash, blockHeight,
+	)
 	require.NoError(t, err, "unable to prune graph")
 	require.Len(t, prunedChans, 2)
 
@@ -2287,7 +2301,7 @@ func TestGraphPruning(t *testing.T) {
 	assertNumChans(t, graph, 2)
 
 	// Those channels should also be missing from the channel view.
-	channelView, err = graph.ChannelView()
+	channelView, err = graph.ChannelView(ctx)
 	require.NoError(t, err, "unable to get graph channel view")
 	assertChanViewEqualChanPoints(t, channelView, channelPoints[2:])
 
@@ -2301,7 +2315,7 @@ func TestGraphPruning(t *testing.T) {
 	blockHash = sha256.Sum256(blockHash[:])
 	blockHeight = 2
 	prunedChans, err = graph.PruneGraph(
-		[]*wire.OutPoint{nonChannel}, &blockHash, blockHeight,
+		ctx, []*wire.OutPoint{nonChannel}, &blockHash, blockHeight,
 	)
 	require.NoError(t, err, "unable to prune graph")
 
@@ -2319,7 +2333,7 @@ func TestGraphPruning(t *testing.T) {
 	blockHash = sha256.Sum256(blockHash[:])
 	blockHeight = 3
 	prunedChans, err = graph.PruneGraph(
-		channelPoints[2:], &blockHash, blockHeight,
+		ctx, channelPoints[2:], &blockHash, blockHeight,
 	)
 	require.NoError(t, err, "unable to prune graph")
 
@@ -2336,7 +2350,7 @@ func TestGraphPruning(t *testing.T) {
 	// Finally, the channel view at this point in the graph should now be
 	// completely empty.  Those channels should also be missing from the
 	// channel view.
-	channelView, err = graph.ChannelView()
+	channelView, err = graph.ChannelView(ctx)
 	require.NoError(t, err, "unable to get graph channel view")
 	require.Empty(t, channelView)
 }
@@ -2396,7 +2410,7 @@ func TestChanUpdatesInHorizon(t *testing.T) {
 	// If we issue an arbitrary query before any channel updates are
 	// inserted in the database, we should get zero results.
 	chanIter := graph.ChanUpdatesInHorizon(
-		time.Unix(999, 0), time.Unix(9999, 0),
+		ctx, time.Unix(999, 0), time.Unix(9999, 0),
 	)
 
 	chanUpdates, err := fn.CollectErr(chanIter)
@@ -2503,7 +2517,7 @@ func TestChanUpdatesInHorizon(t *testing.T) {
 	}
 	for _, queryCase := range queryCases {
 		respIter := graph.ChanUpdatesInHorizon(
-			queryCase.start, queryCase.end,
+			ctx, queryCase.start, queryCase.end,
 		)
 
 		resp, err := fn.CollectErr(respIter)
@@ -2540,7 +2554,7 @@ func TestNodeUpdatesInHorizon(t *testing.T) {
 	// If we issue an arbitrary query before we insert any nodes into the
 	// database, then we shouldn't get any results back.
 	nodeUpdatesIter := graph.NodeUpdatesInHorizon(
-		time.Unix(999, 0), time.Unix(9999, 0),
+		ctx, time.Unix(999, 0), time.Unix(9999, 0),
 	)
 	nodeUpdates, err := fn.CollectErr(nodeUpdatesIter)
 	require.NoError(t, err, "unable to query for node updates")
@@ -2615,7 +2629,7 @@ func TestNodeUpdatesInHorizon(t *testing.T) {
 	}
 	for _, queryCase := range queryCases {
 		iter := graph.NodeUpdatesInHorizon(
-			queryCase.start, queryCase.end,
+			ctx, queryCase.start, queryCase.end,
 		)
 
 		resp, err := fn.CollectErr(iter)
@@ -2743,7 +2757,7 @@ func testNodeUpdatesWithBatchSize(t *testing.T, ctx context.Context,
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			iter := testGraph.NodeUpdatesInHorizon(
-				tc.start, tc.end,
+				ctx, tc.start, tc.end,
 				WithNodeUpdateIterBatchSize(
 					batchSize,
 				),
@@ -2816,7 +2830,7 @@ func TestNodeUpdatesInHorizonEarlyTermination(t *testing.T) {
 	for _, stopAt := range terminationPoints {
 		t.Run(fmt.Sprintf("StopAt%d", stopAt), func(t *testing.T) {
 			iter := graph.NodeUpdatesInHorizon(
-				startTime, startTime.Add(200*time.Hour),
+				ctx, startTime, startTime.Add(200*time.Hour),
 				WithNodeUpdateIterBatchSize(10),
 			)
 
@@ -2905,7 +2919,7 @@ func TestChanUpdatesInHorizonBoundaryConditions(t *testing.T) {
 			// Now we'll run the main query, and verify that we get
 			// back the expected number of channels.
 			iter := graph.ChanUpdatesInHorizon(
-				startTime, startTime.Add(26*time.Hour),
+				ctx, startTime, startTime.Add(26*time.Hour),
 				WithChanUpdateIterBatchSize(batchSize),
 			)
 
@@ -2929,6 +2943,7 @@ func TestChanUpdatesInHorizonBoundaryConditions(t *testing.T) {
 // FilterKnownChanIDs is tested in TestFilterKnownChanIDs.
 func TestFilterKnownChanIDsZombieRevival(t *testing.T) {
 	t.Parallel()
+	ctx := t.Context()
 
 	graph := MakeTestGraph(t)
 
@@ -2939,16 +2954,22 @@ func TestFilterKnownChanIDsZombieRevival(t *testing.T) {
 	)
 
 	isZombie := func(scid lnwire.ShortChannelID) bool {
-		zombie, _, _, err := graph.IsZombieEdge(scid.ToUint64())
+		zombie, _, _, err := graph.IsZombieEdge(
+			ctx, scid.ToUint64(),
+		)
 		require.NoError(t, err)
 
 		return zombie
 	}
 
 	// Mark channel 1 and 2 as zombies.
-	err := graph.MarkEdgeZombie(scid1.ToUint64(), [33]byte{}, [33]byte{})
+	err := graph.MarkEdgeZombie(
+		ctx, scid1.ToUint64(), [33]byte{}, [33]byte{},
+	)
 	require.NoError(t, err)
-	err = graph.MarkEdgeZombie(scid2.ToUint64(), [33]byte{}, [33]byte{})
+	err = graph.MarkEdgeZombie(
+		ctx, scid2.ToUint64(), [33]byte{}, [33]byte{},
+	)
 	require.NoError(t, err)
 
 	require.True(t, isZombie(scid1))
@@ -2957,7 +2978,7 @@ func TestFilterKnownChanIDsZombieRevival(t *testing.T) {
 
 	// Call FilterKnownChanIDs with an isStillZombie call-back that would
 	// result in the current zombies still be considered as zombies.
-	_, err = graph.FilterKnownChanIDs([]ChannelUpdateInfo{
+	_, err = graph.FilterKnownChanIDs(ctx, []ChannelUpdateInfo{
 		{ShortChannelID: scid1},
 		{ShortChannelID: scid2},
 		{ShortChannelID: scid3},
@@ -2973,7 +2994,7 @@ func TestFilterKnownChanIDsZombieRevival(t *testing.T) {
 	// Now call it again but this time with a isStillZombie call-back that
 	// would result in channel with SCID 2 no longer being considered a
 	// zombie.
-	_, err = graph.FilterKnownChanIDs([]ChannelUpdateInfo{
+	_, err = graph.FilterKnownChanIDs(ctx, []ChannelUpdateInfo{
 		{ShortChannelID: scid1},
 		{
 			ShortChannelID:       scid2,
@@ -3019,7 +3040,9 @@ func TestFilterKnownChanIDs(t *testing.T) {
 		{ShortChannelID: scid2},
 		{ShortChannelID: scid3},
 	}
-	filteredIDs, err := graph.FilterKnownChanIDs(preChanIDs, isZombieUpdate)
+	filteredIDs, err := graph.FilterKnownChanIDs(
+		ctx, preChanIDs, isZombieUpdate,
+	)
 	require.NoError(t, err, "unable to filter chan IDs")
 	require.EqualValues(t, []uint64{
 		scid1.ToUint64(),
@@ -3057,7 +3080,9 @@ func TestFilterKnownChanIDs(t *testing.T) {
 			node1, node2,
 		)
 		require.NoError(t, graph.AddChannelEdge(ctx, channel))
-		err := graph.DeleteChannelEdges(false, true, channel.ChannelID)
+		err := graph.DeleteChannelEdges(
+			ctx, false, true, channel.ChannelID,
+		)
 		require.NoError(t, err)
 
 		zombieIDs = append(
@@ -3142,7 +3167,7 @@ func TestFilterKnownChanIDs(t *testing.T) {
 
 	for _, queryCase := range queryCases {
 		resp, err := graph.FilterKnownChanIDs(
-			queryCase.queryIDs, isZombieUpdate,
+			ctx, queryCase.queryIDs, isZombieUpdate,
 		)
 		require.NoError(t, err)
 
@@ -3299,7 +3324,7 @@ func TestStressTestChannelGraphAPI(t *testing.T) {
 				}
 
 				return graph.MarkEdgeZombie(
-					channel.id.ToUint64(),
+					ctx, channel.id.ToUint64(),
 					node1.PubKeyBytes,
 					node2.PubKeyBytes,
 				)
@@ -3321,7 +3346,7 @@ func TestStressTestChannelGraphAPI(t *testing.T) {
 				}
 
 				_, err := graph.FilterKnownChanIDs(
-					chanIDs,
+					ctx, chanIDs,
 					func(t time.Time, t2 time.Time) bool {
 						return rand.Intn(2) == 0
 					},
@@ -3339,7 +3364,7 @@ func TestStressTestChannelGraphAPI(t *testing.T) {
 				}
 
 				_, _, err := graph.HasChannelEdge(
-					lnwire.GossipVersion1,
+					ctx, lnwire.GossipVersion1,
 					channel.id.ToUint64(),
 				)
 
@@ -3360,7 +3385,7 @@ func TestStressTestChannelGraphAPI(t *testing.T) {
 				}
 
 				_, err := graph.PruneGraph(
-					spentOutpoints, &blockHash, 100,
+					ctx, spentOutpoints, &blockHash, 100,
 				)
 
 				return err
@@ -3370,7 +3395,8 @@ func TestStressTestChannelGraphAPI(t *testing.T) {
 			name: "ChanUpdateInHorizon",
 			fn: func() error {
 				iter := graph.ChanUpdatesInHorizon(
-					time.Now().Add(-time.Hour), time.Now(),
+					ctx, time.Now().Add(-time.Hour),
+					time.Now(),
 				)
 				_, err := fn.CollectErr(iter)
 
@@ -3395,7 +3421,8 @@ func TestStressTestChannelGraphAPI(t *testing.T) {
 				}
 
 				err := graph.DeleteChannelEdges(
-					strictPruning, markZombie, chanIDs...,
+					ctx, strictPruning, markZombie,
+					chanIDs...,
 				)
 				if err != nil &&
 					!errors.Is(err, ErrEdgeNotFound) {
@@ -3410,7 +3437,7 @@ func TestStressTestChannelGraphAPI(t *testing.T) {
 			name: "DisconnectBlockAtHeight",
 			fn: func() error {
 				_, err := graph.DisconnectBlockAtHeight(
-					newBlockHeight(),
+					ctx, newBlockHeight(),
 				)
 
 				return err
@@ -3476,7 +3503,7 @@ func TestFilterChannelRange(t *testing.T) {
 
 	// If we try to filter a channel range before we have any channels
 	// inserted, we should get an empty slice of results.
-	resp, err := graph.FilterChannelRange(10, 100, false)
+	resp, err := graph.FilterChannelRange(ctx, 10, 100, false)
 	require.NoError(t, err)
 	require.Empty(t, resp)
 
@@ -3651,7 +3678,7 @@ func TestFilterChannelRange(t *testing.T) {
 
 			// First, do the query without requesting timestamps.
 			resp, err := graph.FilterChannelRange(
-				test.startHeight, test.endHeight, false,
+				ctx, test.startHeight, test.endHeight, false,
 			)
 			require.NoError(t, err)
 
@@ -3665,7 +3692,7 @@ func TestFilterChannelRange(t *testing.T) {
 
 			// Now, query the timestamps as well.
 			resp, err = graph.FilterChannelRange(
-				test.startHeight, test.endHeight, true,
+				ctx, test.startHeight, test.endHeight, true,
 			)
 			require.NoError(t, err)
 
@@ -3753,14 +3780,16 @@ func testFetchChanInfos(t *testing.T, v lnwire.GossipVersion) {
 		v, 666, 0, 0, 0, node1, node2,
 	)
 	require.NoError(t, graph.AddChannelEdge(ctx, zombieChan))
-	err := graph.DeleteChannelEdges(false, true, zombieChan.ChannelID)
+	err := graph.DeleteChannelEdges(
+		ctx, false, true, zombieChan.ChannelID,
+	)
 	require.NoError(t, err, "unable to delete and mark edge zombie")
 	edgeQuery = append(edgeQuery, zombieChanID.ToUint64())
 
 	// We'll now attempt to query for the range of channel ID's we just
 	// inserted into the database. We should get the exact same set of
 	// edges back.
-	resp, err := graph.FetchChanInfos(edgeQuery)
+	resp, err := graph.FetchChanInfos(ctx, edgeQuery)
 	require.NoError(t, err, "unable to fetch chan edges")
 	require.Len(t, resp, len(edges))
 
@@ -3968,7 +3997,8 @@ func TestChannelEdgePruningUpdateIndexDeletion(t *testing.T) {
 	var blockHash chainhash.Hash
 	copy(blockHash[:], bytes.Repeat([]byte{2}, 32))
 	_, err := graph.PruneGraph(
-		[]*wire.OutPoint{&edgeInfo.ChannelPoint}, &blockHash, 101,
+		ctx, []*wire.OutPoint{&edgeInfo.ChannelPoint}, &blockHash,
+		101,
 	)
 	require.NoError(t, err, "unable to prune graph")
 
@@ -4017,7 +4047,7 @@ func TestPruneGraphNodes(t *testing.T) {
 	require.NoError(t, graph.UpdateEdgePolicy(ctx, edge1))
 
 	// We'll now initiate a around of graph pruning.
-	require.NoError(t, graph.PruneGraphNodes())
+	require.NoError(t, graph.PruneGraphNodes(ctx))
 
 	// At this point, there should be 3 nodes left in the graph still: the
 	// source node (which can't be pruned), and node 1+2. Nodes 1 and two
@@ -4091,7 +4121,9 @@ func TestNodePruningUpdateIndexDeletion(t *testing.T) {
 	// update time of our test node.
 	startTime := time.Unix(9, 0)
 	endTime := node1.LastUpdate.Add(time.Minute)
-	nodesInHorizonIter := graph.NodeUpdatesInHorizon(startTime, endTime)
+	nodesInHorizonIter := graph.NodeUpdatesInHorizon(
+		ctx, startTime, endTime,
+	)
 
 	// We should only have a single node, and that node should exactly
 	// match the node we just inserted.
@@ -4107,7 +4139,9 @@ func TestNodePruningUpdateIndexDeletion(t *testing.T) {
 
 	// Now that the node has been deleted, we'll again query the nodes in
 	// the horizon. This time we should have no nodes at all.
-	nodesInHorizonIter = graph.NodeUpdatesInHorizon(startTime, endTime)
+	nodesInHorizonIter = graph.NodeUpdatesInHorizon(
+		ctx, startTime, endTime,
+	)
 	nodesInHorizon, err = fn.CollectErr(nodesInHorizonIter)
 	require.NoError(t, err, "unable to fetch nodes in horizon")
 	require.Empty(t, nodesInHorizon)
@@ -4196,7 +4230,7 @@ func testNodeIsPublic(t *testing.T, v lnwire.GossipVersion) {
 		for _, node := range nodes {
 			for _, graph := range graphs {
 				isPublic, err := graph.IsPublicNode(
-					node.PubKeyBytes,
+					ctx, node.PubKeyBytes,
 				)
 				require.NoError(t, err)
 
@@ -4214,7 +4248,7 @@ func testNodeIsPublic(t *testing.T, v lnwire.GossipVersion) {
 	// has any advertised edges.
 	for _, graph := range graphs {
 		err := graph.DeleteChannelEdges(
-			false, true, aliceBobEdge.ChannelID,
+			ctx, false, true, aliceBobEdge.ChannelID,
 		)
 		require.NoError(t, err, "unable to remove edge")
 	}
@@ -4231,7 +4265,7 @@ func testNodeIsPublic(t *testing.T, v lnwire.GossipVersion) {
 	// it without it being advertised.
 	for _, graph := range graphs {
 		err := graph.DeleteChannelEdges(
-			false, true, bobCarolEdge.ChannelID,
+			ctx, false, true, bobCarolEdge.ChannelID,
 		)
 		require.NoError(t, err, "unable to remove edge")
 
@@ -4301,7 +4335,7 @@ func testIsPublicNodeEmptyChannelSignature(t *testing.T,
 
 	// node1 should NOT be considered public because the
 	// channel announcement has empty signatures.
-	isPublic, err := graph.IsPublicNode(node1.PubKeyBytes)
+	isPublic, err := graph.IsPublicNode(ctx, node1.PubKeyBytes)
 	require.NoError(t, err)
 	require.False(t, isPublic)
 }
@@ -4325,7 +4359,7 @@ func BenchmarkIsPublicNode(b *testing.B) {
 		// Query random nodes to avoid query caching and better
 		// represent real-world query patterns.
 		nodePub := nodes[rng.Intn(len(nodes))].PubKeyBytes
-		_, err := graph.IsPublicNode(nodePub)
+		_, err := graph.IsPublicNode(b.Context(), nodePub)
 		require.NoError(b, err)
 	}
 }
@@ -4359,7 +4393,7 @@ func testDisabledChannelIDs(t *testing.T, v lnwire.GossipVersion) {
 	require.NoError(t, graph.AddChannelEdge(ctx, edgeInfo))
 
 	// Ensure no disabled channels exist in the bucket on start.
-	disabledChanIds, err := graph.DisabledChannelIDs()
+	disabledChanIds, err := graph.DisabledChannelIDs(ctx)
 	require.NoError(t, err, "unable to get disabled channel ids")
 	require.Empty(t, disabledChanIds)
 
@@ -4372,7 +4406,7 @@ func testDisabledChannelIDs(t *testing.T, v lnwire.GossipVersion) {
 		edge1.DisableFlags |= lnwire.ChanUpdateDisableIncoming
 	}
 	require.NoError(t, graph.UpdateEdgePolicy(ctx, edge1))
-	disabledChanIds, err = graph.DisabledChannelIDs()
+	disabledChanIds, err = graph.DisabledChannelIDs(ctx)
 	require.NoError(t, err, "unable to get disabled channel ids")
 	require.Empty(t, disabledChanIds)
 
@@ -4385,16 +4419,16 @@ func testDisabledChannelIDs(t *testing.T, v lnwire.GossipVersion) {
 		edge2.DisableFlags |= lnwire.ChanUpdateDisableIncoming
 	}
 	require.NoError(t, graph.UpdateEdgePolicy(ctx, edge2))
-	disabledChanIds, err = graph.DisabledChannelIDs()
+	disabledChanIds, err = graph.DisabledChannelIDs(ctx)
 	require.NoError(t, err, "unable to get disabled channel ids")
 	require.Equal(t, []uint64{edgeInfo.ChannelID}, disabledChanIds)
 
 	// Delete the channel edge and ensure it is removed from the disabled
 	// list.
 	require.NoError(t, graph.DeleteChannelEdges(
-		false, true, edgeInfo.ChannelID,
+		ctx, false, true, edgeInfo.ChannelID,
 	))
-	disabledChanIds, err = graph.DisabledChannelIDs()
+	disabledChanIds, err = graph.DisabledChannelIDs(ctx)
 	require.NoError(t, err, "unable to get disabled channel ids")
 	require.Empty(t, disabledChanIds)
 }
@@ -4467,7 +4501,9 @@ func TestEdgePolicyMissingMaxHTLC(t *testing.T) {
 	// we added is invalid according to the new format, it should be as we
 	// are not aware of the policy (indicated by the policy returned being
 	// nil)
-	dbEdgeInfo, dbEdge1, dbEdge2, err := graph.FetchChannelEdgesByID(chanID)
+	dbEdgeInfo, dbEdge1, dbEdge2, err := graph.FetchChannelEdgesByID(
+		ctx, chanID,
+	)
 	require.NoError(t, err, "unable to fetch channel by ID")
 
 	// The first edge should have a nil-policy returned
@@ -4479,7 +4515,9 @@ func TestEdgePolicyMissingMaxHTLC(t *testing.T) {
 	// policies then become fully populated.
 	require.NoError(t, graph.UpdateEdgePolicy(ctx, edge1))
 
-	dbEdgeInfo, dbEdge1, dbEdge2, err = graph.FetchChannelEdgesByID(chanID)
+	dbEdgeInfo, dbEdge1, dbEdge2, err = graph.FetchChannelEdgesByID(
+		ctx, chanID,
+	)
 	require.NoError(t, err, "unable to fetch channel by ID")
 	compareEdgePolicies(t, dbEdge1, edge1)
 	compareEdgePolicies(t, dbEdge2, edge2)
@@ -4523,7 +4561,7 @@ func putSerializedPolicy(t *testing.T, db kvdb.Backend, from []byte,
 func assertNumZombies(t *testing.T, graph *ChannelGraph, expZombies uint64) {
 	t.Helper()
 
-	numZombies, err := graph.NumZombies()
+	numZombies, err := graph.NumZombies(t.Context())
 	require.NoError(t, err, "unable to query number of zombies")
 	require.Equal(t, expZombies, numZombies)
 }
@@ -4552,16 +4590,18 @@ func TestGraphZombieIndex(t *testing.T) {
 
 	// Since the edge is known the graph and it isn't a zombie, IsZombieEdge
 	// should not report the channel as a zombie.
-	isZombie, _, _, err := graph.IsZombieEdge(edge.ChannelID)
+	isZombie, _, _, err := graph.IsZombieEdge(ctx, edge.ChannelID)
 	require.NoError(t, err)
 	require.False(t, isZombie)
 	assertNumZombies(t, graph, 0)
 
 	// If we delete the edge and mark it as a zombie, then we should expect
 	// to see it within the index.
-	err = graph.DeleteChannelEdges(false, true, edge.ChannelID)
+	err = graph.DeleteChannelEdges(ctx, false, true, edge.ChannelID)
 	require.NoError(t, err, "unable to mark edge as zombie")
-	isZombie, pubKey1, pubKey2, err := graph.IsZombieEdge(edge.ChannelID)
+	isZombie, pubKey1, pubKey2, err := graph.IsZombieEdge(
+		ctx, edge.ChannelID,
+	)
 	require.NoError(t, err)
 	require.True(t, isZombie)
 	require.Equal(t, node1.PubKeyBytes, pubKey1)
@@ -4570,15 +4610,16 @@ func TestGraphZombieIndex(t *testing.T) {
 
 	// Similarly, if we mark the same edge as live, we should no longer see
 	// it within the index.
-	require.NoError(t, graph.MarkEdgeLive(edge.ChannelID))
+	require.NoError(t, graph.MarkEdgeLive(ctx, edge.ChannelID))
 
 	// Attempting to mark the edge as live again now that it is no longer
 	// in the zombie index should fail.
 	require.ErrorIs(
-		t, graph.MarkEdgeLive(edge.ChannelID), ErrZombieEdgeNotFound,
+		t, graph.MarkEdgeLive(ctx, edge.ChannelID),
+		ErrZombieEdgeNotFound,
 	)
 
-	isZombie, _, _, err = graph.IsZombieEdge(edge.ChannelID)
+	isZombie, _, _, err = graph.IsZombieEdge(ctx, edge.ChannelID)
 	require.NoError(t, err)
 	require.False(t, isZombie)
 
@@ -4587,11 +4628,11 @@ func TestGraphZombieIndex(t *testing.T) {
 	// If we mark the edge as a zombie manually, then it should show up as
 	// being a zombie once again.
 	err = graph.MarkEdgeZombie(
-		edge.ChannelID, node1.PubKeyBytes, node2.PubKeyBytes,
+		ctx, edge.ChannelID, node1.PubKeyBytes, node2.PubKeyBytes,
 	)
 	require.NoError(t, err, "unable to mark edge as zombie")
 
-	isZombie, _, _, err = graph.IsZombieEdge(edge.ChannelID)
+	isZombie, _, _, err = graph.IsZombieEdge(ctx, edge.ChannelID)
 	require.NoError(t, err)
 	require.True(t, isZombie)
 	assertNumZombies(t, graph, 1)
@@ -4724,12 +4765,12 @@ func testBatchedAddChannelEdge(t *testing.T, v lnwire.GossipVersion) {
 
 	// Prune the graph a few times to make sure we have entries in the
 	// prune log.
-	_, err := graph.PruneGraph(spendOutputs, &blockHash, 155)
+	_, err := graph.PruneGraph(ctx, spendOutputs, &blockHash, 155)
 	require.Nil(t, err)
 	var blockHash2 chainhash.Hash
 	copy(blockHash2[:], bytes.Repeat([]byte{2}, 32))
 
-	_, err = graph.PruneGraph(spendOutputs, &blockHash2, 156)
+	_, err = graph.PruneGraph(ctx, spendOutputs, &blockHash2, 156)
 	require.Nil(t, err)
 
 	// We'll create 3 almost identical edges, so first create a helper
@@ -4928,7 +4969,7 @@ func testGraphCacheForEachNodeChannel(t *testing.T,
 	getSingleChannel := func() *DirectedChannel {
 		var ch *DirectedChannel
 		err := graph.db.ForEachNodeDirectedChannel(
-			v, node1.PubKeyBytes,
+			ctx, v, node1.PubKeyBytes,
 			func(c *DirectedChannel) error {
 				require.Nil(t, ch)
 				ch = c
@@ -5045,16 +5086,16 @@ func TestClosedScid(t *testing.T) {
 	scid := lnwire.ShortChannelID{}
 
 	// The scid should not exist in the closedScidBucket.
-	exists, err := graph.IsClosedScid(scid)
+	exists, err := graph.IsClosedScid(t.Context(), scid)
 	require.Nil(t, err)
 	require.False(t, exists)
 
 	// After we call PutClosedScid, the call to IsClosedScid should return
 	// true.
-	err = graph.PutClosedScid(scid)
+	err = graph.PutClosedScid(t.Context(), scid)
 	require.Nil(t, err)
 
-	exists, err = graph.IsClosedScid(scid)
+	exists, err = graph.IsClosedScid(t.Context(), scid)
 	require.Nil(t, err)
 	require.True(t, exists)
 }

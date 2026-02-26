@@ -4793,7 +4793,7 @@ func TestChanAnnBanningNonChanPeer(t *testing.T) {
 
 	// Check that the announcement's scid is marked as closed.
 	isClosed, err := tCtx.gossiper.cfg.ScidCloser.IsClosedScid(
-		ca.ShortChannelID,
+		ctx, ca.ShortChannelID,
 	)
 	require.Nil(t, err)
 	require.True(t, isClosed)

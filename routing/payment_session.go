@@ -1,6 +1,7 @@
 package routing
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/btcsuite/btcd/btcec/v2"
@@ -344,6 +345,7 @@ func (p *paymentSession) RequestRoute(maxAmt, feeLimit lnwire.MilliSatoshi,
 
 	for {
 		err := p.graphSessFactory.GraphSession(
+			context.TODO(),
 			findPath, func() {
 				path = nil
 			},

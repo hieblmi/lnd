@@ -2199,7 +2199,9 @@ func runRouteFailMaxHTLC(t *testing.T, useCache bool) {
 	// Next, update the middle edge policy to only allow payments up to 100k
 	// msat.
 	graph := ctx.testGraphInstance.graph
-	_, midEdge, _, err := graph.FetchChannelEdgesByID(firstToSecondID)
+	_, midEdge, _, err := graph.FetchChannelEdgesByID(
+		t.Context(), firstToSecondID,
+	)
 	require.NoError(t, err, "unable to fetch channel edges by ID")
 	midEdge.MessageFlags = 1
 	midEdge.MaxHTLC = payAmt - 1
@@ -2243,7 +2245,9 @@ func runRouteFailDisabledEdge(t *testing.T, useCache bool) {
 	// path finding, as we don't consider the disable flag for local
 	// channels (and roasbeef is the source).
 	roasToPham := uint64(999991)
-	_, e1, e2, err := graph.graph.FetchChannelEdgesByID(roasToPham)
+	_, e1, e2, err := graph.graph.FetchChannelEdgesByID(
+		t.Context(), roasToPham,
+	)
 	require.NoError(t, err, "unable to fetch edge")
 	e1.ChannelFlags |= lnwire.ChanUpdateDisabled
 	e1.LastUpdate = e1.LastUpdate.Add(time.Second)
@@ -2266,7 +2270,9 @@ func runRouteFailDisabledEdge(t *testing.T, useCache bool) {
 	// Now, we'll modify the edge from phamnuwen -> sophon, to read that
 	// it's disabled.
 	phamToSophon := uint64(99999)
-	_, e, _, err := graph.graph.FetchChannelEdgesByID(phamToSophon)
+	_, e, _, err := graph.graph.FetchChannelEdgesByID(
+		t.Context(), phamToSophon,
+	)
 	require.NoError(t, err, "unable to fetch edge")
 	e.ChannelFlags |= lnwire.ChanUpdateDisabled
 	e.LastUpdate = e.LastUpdate.Add(time.Second)
@@ -2349,7 +2355,9 @@ func runPathSourceEdgesBandwidth(t *testing.T, useCache bool) {
 	// Finally, set the roasbeef->songoku bandwidth, but also set its
 	// disable flag.
 	bandwidths.hints[roasToSongoku] = 2 * payAmt
-	_, e1, e2, err := graph.graph.FetchChannelEdgesByID(roasToSongoku)
+	_, e1, e2, err := graph.graph.FetchChannelEdgesByID(
+		t.Context(), roasToSongoku,
+	)
 	require.NoError(t, err, "unable to fetch edge")
 	e1.ChannelFlags |= lnwire.ChanUpdateDisabled
 	e1.LastUpdate = e1.LastUpdate.Add(time.Second)
@@ -3318,7 +3326,7 @@ func dbFindPath(graph *graphdb.VersionedGraph,
 	}
 
 	var route []*unifiedEdge
-	err = graph.GraphSession(func(graph graphdb.NodeTraverser) error {
+	err = graph.GraphSession(ctx, func(graph graphdb.NodeTraverser) error {
 		route, _, err = findPath(
 			&graphParams{
 				additionalEdges: additionalEdges,

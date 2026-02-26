@@ -1,6 +1,7 @@
 package routing
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/btcsuite/btcd/btcutil"
@@ -14,12 +15,13 @@ import (
 type Graph interface {
 	// ForEachNodeDirectedChannel calls the callback for every channel of
 	// the given node.
-	ForEachNodeDirectedChannel(nodePub route.Vertex,
+	ForEachNodeDirectedChannel(ctx context.Context, nodePub route.Vertex,
 		cb func(channel *graphdb.DirectedChannel) error,
 		reset func()) error
 
 	// FetchNodeFeatures returns the features of the given node.
-	FetchNodeFeatures(nodePub route.Vertex) (*lnwire.FeatureVector, error)
+	FetchNodeFeatures(ctx context.Context,
+		nodePub route.Vertex) (*lnwire.FeatureVector, error)
 }
 
 // GraphSessionFactory can be used to gain access to a graphdb.NodeTraverser
@@ -30,7 +32,8 @@ type GraphSessionFactory interface {
 	// GraphSession will provide the call-back with access to a
 	// graphdb.NodeTraverser instance which can be used to perform queries
 	// against the channel graph.
-	GraphSession(cb func(graph graphdb.NodeTraverser) error,
+	GraphSession(ctx context.Context,
+		cb func(graph graphdb.NodeTraverser) error,
 		reset func()) error
 }
 
